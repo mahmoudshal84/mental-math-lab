@@ -36,7 +36,7 @@ MML.help = (function () {
           <li><b>Lives (Arcade only):</b> you have 3, and a wrong answer costs one. 8 right in a row gives you a shield that saves your next life.</li>
           <li><b>Streaks:</b> 5 right in a row doubles your points. 10 in a row triples them.</li>
           <li><b>Mistakes:</b> when you get one wrong, you'll see the right answer and a tip. Questions you miss come back later so you can try again.</li>
-          <li><b>Pause:</b> press <kbd>Esc</kbd> anytime.</li>
+          <li><b>No pausing:</b> the game keeps going even if you switch tabs, so stay on the game until your round is over.</li>
           <li><b>Review:</b> at the end, "Review these" lists the questions you missed.</li>
         </ul>`],
       ["🕹️", "The games", `<ul>${games}</ul>

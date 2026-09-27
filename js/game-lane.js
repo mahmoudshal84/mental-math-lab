@@ -75,7 +75,6 @@ MML.games.lane = {
         else if (k === " " || k === "ArrowUp" || k === "w" || k === "W") boost = true;
       },
       onKeyUp(e) { if ([" ", "ArrowUp", "w", "W"].includes(e.key)) boost = false; },
-      onPause() { boost = false; },
       update(dt) {
         const lay = L(), g = gate;
         const speed = boost && g && !g.resolved ? BOOST : 1;

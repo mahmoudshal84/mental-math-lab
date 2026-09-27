@@ -74,7 +74,6 @@ MML.games.blast = {
         S.hint("Type the answer and press <kbd>Enter</kbd>");
       },
       focus() { if (S.state === "playing") input.focus(); },
-      onPause() { input.blur(); },
       onEnd() { form.hidden = true; input.blur(); },
       update(dt) {
         scroll += 40 * dt;

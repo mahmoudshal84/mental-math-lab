@@ -181,7 +181,7 @@
     },
     alive: () => !arcade || R.hearts > 0,
 
-    /* Big "Not quite" card that pauses the game. */
+    /* Big "Not quite" card. The game waits until the student clicks Keep going (the next question isn't shown yet). */
     miss(q, picked, opts = {}) {
       S.record(q, false, opts);
       const life = S.loseLife();
@@ -297,17 +297,6 @@
     if (f) f();
     game.focus && game.focus();
   }
-  function pause() {
-    if (R.state !== "playing") return;
-    R.state = "paused";
-    game.onPause && game.onPause();
-    $("pauseScreen").hidden = false; $("resumeBtn").focus();
-  }
-  function resume() {
-    if (R.state !== "paused") return;
-    $("pauseScreen").hidden = true; R.state = "playing"; blur();
-    game.focus && game.focus();
-  }
   function start() {
     if (R.state !== "ready" && R.state !== "over") return;
     $("startScreen").hidden = true; $("endScreen").hidden = true;
@@ -322,7 +311,7 @@
     R.state = "over";
     game.onEnd && game.onEnd();
     S.hideProblem();
-    ["wrongScreen", "pauseScreen", "tipPanel"].forEach((id) => ($(id).hidden = true));
+    ["wrongScreen", "tipPanel"].forEach((id) => ($(id).hidden = true));
 
     let title = arcade ? "Run over" : "Round ended early";
     const starsEl = $("endStars"), noteEl = $("endNote"), unlockEl = $("endUnlock");
@@ -392,7 +381,6 @@
   $("againBtn").onclick = start;
   $("retrySave").onclick = save;
   $("wrongBtn").onclick = afterWrong;
-  $("resumeBtn").onclick = resume;
   $("endBtn").onclick = (e) => { e.currentTarget.blur(); endRun(); };
   $("startTitle").textContent = info.name;
   $("startTopic").textContent = label;
@@ -406,8 +394,8 @@
   $("startLives").textContent = arcade
     ? `You have ${LIVES} lives. Get ${SHIELD_EVERY} right in a row to earn a shield that saves one.`
     : "No lives in a level round: you always get to finish all the questions.";
-  document.addEventListener("visibilitychange", () => { if (document.hidden) pause(); });
-  addEventListener("beforeunload", (e) => { if (["playing", "wrong", "paused"].includes(R.state)) { e.preventDefault(); e.returnValue = ""; } });
+  // There is no pause. Leaving the tab doesn't stop the game (see "catch up" in the loop below).
+  addEventListener("beforeunload", (e) => { if (["playing", "wrong"].includes(R.state)) { e.preventDefault(); e.returnValue = ""; } });
 
   /* ---------- Keys: the engine handles screens, the game handles play ---------- */
   addEventListener("keydown", (e) => {
@@ -417,8 +405,6 @@
     if (R.state === "ready") { if (confirm && !e.repeat && !$("startScreen").hidden) { e.preventDefault(); start(); } return; }
     if (R.state === "over" || R.state === "ending") return;
     if (R.state === "wrong") { if (confirm && !e.repeat) { e.preventDefault(); afterWrong(); } return; }
-    if (R.state === "paused") { if ((confirm || k === "Escape") && !e.repeat) { e.preventDefault(); resume(); } return; }
-    if (k === "Escape" && !e.repeat) { pause(); return; }
     game.onKey && game.onKey(e);
   });
   addEventListener("keyup", (e) => { if (R.state === "playing" && game.onKeyUp) game.onKeyUp(e); });
@@ -426,9 +412,19 @@
   /* ---------- Loop ---------- */
   let last = performance.now();
   function frame(now) {
-    const dt = Math.max(0, Math.min(0.05, (now - last) / 1000));
-    last = now; clock += dt;
-    if (R.state === "playing") game.update(dt);
+    const raw = Math.max(0, (now - last) / 1000);
+    last = now;
+    let dt = Math.min(0.05, raw);
+    // No pausing: browsers freeze hidden tabs, so when the student comes back the game
+    // catches up on all the time they were away (problems keep falling, timers keep running).
+    if (R.state === "playing" && raw > 0.25) {
+      let left = Math.min(raw, 180);
+      while (left > 0 && R.state === "playing") { const step = Math.min(0.05, left); clock += step; game.update(step); left -= step; }
+      if (raw > 2 && $("tipPanel").hidden) S.note("The game kept going while you were away.", "There's no pausing, so stay on this tab until the round is over.", 4500);
+      dt = 0;
+    }
+    clock += dt;
+    if (R.state === "playing" && dt > 0) game.update(dt);
     else if (game.idle) game.idle(dt);
     for (const p of fx.particles) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 400 * dt; }
     fx.particles = fx.particles.filter((p) => p.life > 0);
@@ -455,7 +451,7 @@
   MML.siteLock.start(user, {
     arcade,
     onLock() {
-      if (["playing", "wrong", "paused", "ending"].includes(R.state)) { endRun(); return "Your last run was saved."; }
+      if (["playing", "wrong", "ending"].includes(R.state)) { endRun(); return "Your last run was saved."; }
       return "";
     },
   });
