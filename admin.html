@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Admin · Mental Math Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Lexend:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔑</text></svg>">
+</head>
+<body>
+  <div class="view-center" id="loadingView"><p>Loading…</p></div>
+
+  <div class="view-center" id="loginView" hidden>
+    <form class="panel login" id="loginForm">
+      <h2>Teacher login</h2>
+      <label class="field">Email <input id="aEmail" type="email" autocomplete="username" required></label>
+      <label class="field">Password <input id="aPass" type="password" autocomplete="current-password" required></label>
+      <p class="error" id="aErr" role="alert"></p>
+      <button class="btn btn-primary btn-block" id="aBtn" type="submit">Log in</button>
+      <p class="note" id="aDemo" hidden>Demo mode: any email and password work.</p>
+      <a class="small-link" href="index.html">Student login</a>
+    </form>
+  </div>
+
+  <div class="view-center" id="studentView" hidden>
+    <div class="panel login">
+      <h2>This page is for the teacher</h2>
+      <p>You're logged in as a student.</p>
+      <a class="btn btn-primary" href="index.html">Back to games</a>
+    </div>
+  </div>
+
+  <div class="wrap" id="adminView" hidden>
+    <header class="top">
+      <div>
+        <span class="wordmark" style="font-size:clamp(2rem,5vw,3rem)">Admin</span>
+        <p class="tagline">Manage student accounts for Mental Math Lab.</p>
+      </div>
+      <nav class="nav" aria-label="Admin">
+        <a href="leaderboards.html">Leaderboards</a>
+        <a href="index.html">Student site</a>
+        <button type="button" id="logout">Log out</button>
+      </nav>
+    </header>
+
+    <section class="panel access" id="accessPanel" aria-labelledby="h-access">
+      <h2 id="h-access">Site access</h2>
+      <div class="access-row">
+        <div class="access-item">
+          <p class="access-state" id="siteState">Checking…</p>
+          <p class="note">When the site is locked, students see a message instead of the games. A run in progress ends and is saved.</p>
+          <button class="btn" id="siteBtn" type="button" disabled>…</button>
+        </div>
+        <div class="access-item">
+          <p class="access-state" id="arcState">Checking…</p>
+          <p class="note">When Arcade is locked, students can still play levels, but not Arcade.</p>
+          <button class="btn" id="arcBtn" type="button" disabled>…</button>
+        </div>
+      </div>
+      <label class="field">Message students see when the site is locked (optional)
+        <input id="lockMsgIn" maxlength="200" placeholder="Your teacher will open it during class. Check back then!">
+      </label>
+      <button class="btn btn-ghost" id="lockMsgSave" type="button">Save message</button>
+      <span class="note" id="lockMsgNote" role="status"></span>
+      <p class="error" id="accessErr" role="alert"></p>
+    </section>
+
+    <section class="admin-grid" style="margin-bottom:36px">
+      <form class="panel" id="addForm">
+        <h2>Add a student</h2>
+        <p class="note">Username will be first name + last initial, like MayaR.</p>
+        <div class="row">
+          <label class="field">First name <input id="fFirst" required autocomplete="off"></label>
+          <label class="field" style="max-width:120px">Last initial <input id="fInit" maxlength="1" required autocomplete="off"></label>
+          <label class="field" style="max-width:100px">Grade <select id="fGrade"><option>6</option><option>7</option><option>8</option></select></label>
+        </div>
+        <div class="row">
+          <label class="field">Password (6+ characters) <input id="fPass" required minlength="6" autocomplete="off"></label>
+          <button class="btn btn-ghost" type="button" id="genPass" style="margin-bottom:6px">Make one</button>
+        </div>
+        <p class="error" id="addMsg" role="status"></p>
+        <button class="btn btn-primary" id="addBtn" type="submit">Add student</button>
+      </form>
+
+      <div class="panel">
+        <h2>Add many at once</h2>
+        <p class="note">One student per line: first name, last initial, grade, and (optionally) a password. Leave the password off and one is made for you.</p>
+        <textarea class="bulk" id="bulk" placeholder="Maya R 7 tiger42&#10;Leo M 6&#10;Ava K 8 comet19"></textarea>
+        <div class="actions" style="margin-top:10px"><button class="btn btn-primary" id="bulkBtn" type="button">Add all</button></div>
+        <div class="log" id="bulkLog" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Students</h2>
+      <div class="toolbar">
+        <input id="search" type="search" placeholder="Search names" aria-label="Search names">
+        <select id="gradeFilter" aria-label="Filter by grade"><option value="">All grades</option><option>6</option><option>7</option><option>8</option></select>
+        <button class="btn btn-ghost" style="color:var(--paper);border-color:var(--paper)" type="button" id="printBtn">Print login cards</button>
+        <span id="count"></span>
+      </div>
+      <div class="tablewrap">
+        <table class="students">
+          <thead><tr><th>Name</th><th>Username</th><th>Grade</th><th>Password</th><th>Stars</th><th>XP</th><th>Coins</th><th>Last played</th><th>Actions</th></tr></thead>
+          <tbody id="rows"><tr><td colspan="9">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" id="bossPanel">
+      <h2>Class boss battle</h2>
+      <div id="bossSetup">
+        <p class="note">Everyone who opens "Join the battle" fights the same boss. Put the big-screen view on your projector.</p>
+        <div class="row">
+          <label class="field">Topic <select id="bTopic"></select></label>
+          <label class="field">Level <select id="bLevel"></select></label>
+          <label class="field" style="max-width:150px">Students playing <input id="bCount" type="number" min="1" max="80" value="25"></label>
+          <label class="field" style="max-width:120px">Minutes <select id="bMin"><option>5</option><option selected>10</option><option>15</option><option>20</option></select></label>
+          <label class="field" style="max-width:150px">Boss strength <select id="bDiff"><option value="0.6">Easy</option><option value="1" selected>Normal</option><option value="1.4">Hard</option></select></label>
+        </div>
+        <p class="error" id="bossLockWarn" hidden>The site is locked, so students can't join a battle. Open the site first.</p>
+        <button class="btn btn-primary" id="bStart" type="button">Start battle</button>
+      </div>
+      <div id="bossLive" hidden>
+        <p id="bLiveText"></p>
+        <div class="hpbar small"><span id="bHp"></span></div>
+        <div class="actions">
+          <a class="btn btn-primary" href="boss.html?screen=1" target="_blank" rel="noopener">Open big-screen view</a>
+          <button class="btn btn-ghost" id="bEnd" type="button">End battle</button>
+        </div>
+      </div>
+      <p class="error" id="bErr" role="alert"></p>
+    </section>
+
+    <section class="panel" id="drawnPanel">
+      <h2>Boss drawings</h2>
+      <p class="note">Give any boss a student-drawn look. Scan the drawing (or take a photo in good light) and upload up to 3 poses.
+        The poses play in a loop, so a hand can wave or a mouth can chomp. The drawing is used in every battle against that boss
+        and on every student's trophy shelf.</p>
+      <p class="note"><b>Tips for students:</b> draw on plain white paper with dark outlines and bold colors, and fill most of the page.
+        For poses 2 and 3, trace pose 1 onto a new sheet (hold both up to a window) and change only the part that moves.</p>
+      <div class="drawn-list" id="drawnList"></div>
+      <div class="drawn-editor" id="drawnEditor" hidden>
+        <h3 id="dTitle">Drawing</h3>
+        <label class="field" style="max-width:320px">Drawn by <input id="dArtist" maxlength="40" list="dArtists" placeholder="Like Maya R."><datalist id="dArtists"></datalist></label>
+        <div class="row">
+          <label class="field">Pose 1 <input type="file" id="dF1" accept="image/*"></label>
+          <label class="field">Pose 2 (optional) <input type="file" id="dF2" accept="image/*"></label>
+          <label class="field">Pose 3 (optional) <input type="file" id="dF3" accept="image/*"></label>
+        </div>
+        <div class="drawn-preview">
+          <canvas id="dPrev" aria-label="Preview of the drawing"></canvas>
+          <div>
+            <label class="field">Background removal <input type="range" id="dStrength" min="0" max="100" value="40"></label>
+            <p class="note">Move it right if paper or shadows still show. Move it left if parts of the drawing disappear.</p>
+            <label class="check"><input type="checkbox" id="dInside" checked> Keep white parts inside the drawing (like eyes and teeth)</label>
+            <p class="note">Turn this off if a patch of paper shows up somewhere it shouldn't, like between an arm and the body.</p>
+            <label class="check"><input type="checkbox" id="dCenter"> Center each pose (turn this on if the preview jumps around)</label>
+            <p class="note" id="dInfo">Choose at least pose 1 to see a preview.</p>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" id="dSave" type="button" disabled>Save drawing</button>
+          <button class="btn btn-ghost" id="dCancel" type="button">Cancel</button>
+        </div>
+      </div>
+      <p class="error" id="dErr" role="alert"></p>
+    </section>
+
+    <details class="teacher">
+      <summary>Class links</summary>
+      <p>Pick a topic and level. Students who open the link (after logging in) start right there, even if they haven't unlocked that level yet.</p>
+      <div class="tform">
+        <label>Topic <select id="tTopic"></select></label>
+        <label>Level <select id="tLevel"></select></label>
+        <label>Open to <select id="tDest"><option value="hub">Home page</option></select></label>
+        <label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="tFree"> Let students change the topic</label>
+      </div>
+      <div class="tlink">
+        <input type="text" id="tUrl" readonly aria-label="Class link">
+        <button type="button" id="tCopy">Copy link</button>
+      </div>
+    </details>
+  </div>
+
+  <div class="print-area" id="printArea"></div>
+  <div class="toast" id="toast" hidden role="status"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/games.js"></script>
+  <script src="js/problems.js"></script>
+  <script src="js/avatar.js"></script>
+  <script src="js/progress.js"></script>
+  <script src="js/backend.js"></script>
+  <script src="js/lock.js"></script>
+  <script src="js/boss-art.js"></script>
+  <script src="js/boss-maker.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

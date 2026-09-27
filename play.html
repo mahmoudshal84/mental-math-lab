@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mental Math Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Lexend:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+</head>
+<body class="game">
+  <canvas id="stage" aria-label="Game area"></canvas>
+  <div id="gameUi"></div>
+
+  <div class="hud">
+    <div class="hud-left">
+      <div class="chip hearts" id="hearts" aria-label="Lives"></div>
+      <div class="chip" id="shield" hidden>🛡 Shield</div>
+      <div class="chip count" id="answered" aria-live="polite"></div>
+    </div>
+    <div class="hud-right">
+      <div class="chip mult" id="mult" hidden></div>
+      <div class="chip" id="score">Score 0</div>
+      <button class="iconbtn" id="soundBtn" type="button"></button>
+      <button class="iconbtn" id="endBtn" type="button">End run</button>
+    </div>
+  </div>
+
+  <div class="round-bar" id="roundBar" hidden aria-hidden="true"><span></span></div>
+  <div class="problem" id="problem" hidden aria-live="polite"></div>
+  <div class="controls-hint" id="hint" hidden></div>
+  <div class="tip-panel" id="tipPanel" hidden aria-live="polite"><b id="tipFix"></b><span id="tipText"></span></div>
+
+  <div class="overlay" id="loadScreen"><div class="card"><p id="loadMsg">Loading your progress…</p></div></div>
+
+  <div class="overlay" id="startScreen" hidden>
+    <div class="card">
+      <h1 id="startTitle"></h1>
+      <p class="sub" id="startTopic"></p>
+      <ul class="keys" id="startRules"></ul>
+      <p id="startLives"></p>
+      <div class="actions">
+        <button class="btn btn-primary" id="startBtn" type="button">Start</button>
+        <a class="btn btn-ghost" id="backLink" href="index.html">Back to games</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="wrongScreen" hidden>
+    <div class="card" role="alertdialog" aria-labelledby="wrongTitle">
+      <h2 id="wrongTitle">Not quite</h2>
+      <p class="fix" id="wrongFix"></p>
+      <p id="wrongPicked"></p>
+      <div class="tip" id="wrongTip"></div>
+      <button class="btn btn-primary" id="wrongBtn" type="button">Keep going</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="pauseScreen" hidden>
+    <div class="card">
+      <h2>Paused</h2>
+      <p>Take a breath. Your run is waiting.</p>
+      <button class="btn btn-primary" id="resumeBtn" type="button">Resume</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="endScreen" hidden>
+    <div class="card">
+      <h1 id="endTitle">Run over</h1>
+      <p class="sub" id="endTopic"></p>
+      <p class="star-row" id="endStars" hidden></p>
+      <p id="endNote" hidden></p>
+      <p class="unlock" id="endUnlock" hidden></p>
+      <div class="stats">
+        <div><b id="sScore">0</b><span id="sScoreLabel">Score</span></div>
+        <div><b id="sAcc">0</b><span>Right answers</span></div>
+        <div><b id="sStreak">0</b><span>Best streak</span></div>
+        <div><b id="sCoins">0</b><span>Coins earned</span></div>
+      </div>
+      <div id="missedBox" hidden>
+        <h2>Review these</h2>
+        <ul class="missed" id="missedList"></ul>
+      </div>
+      <p class="note" id="saveMsg" role="status"></p>
+      <div class="actions">
+        <button class="btn btn-primary" id="againBtn" type="button">Play again</button>
+        <button class="btn btn-ghost" id="retrySave" type="button" hidden>Try saving again</button>
+        <a class="btn btn-ghost" id="endBoards" href="leaderboards.html" hidden>Leaderboards</a>
+        <a class="btn btn-ghost" id="endBack" href="index.html">Back to games</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/games.js"></script>
+  <script src="js/problems.js"></script>
+  <script src="js/avatar.js"></script>
+  <script src="js/progress.js"></script>
+  <script src="js/backend.js"></script>
+  <script src="js/lock.js"></script>
+  <script src="js/game-lane.js"></script>
+  <script src="js/game-blast.js"></script>
+  <script src="js/game-total.js"></script>
+  <script src="js/game-line.js"></script>
+  <script src="js/game-target.js"></script>
+  <script src="js/game-shell.js"></script>
+</body>
+</html>

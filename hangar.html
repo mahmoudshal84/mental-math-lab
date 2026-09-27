@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hangar · Mental Math Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Lexend:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>">
+</head>
+<body data-themed>
+  <div class="wrap">
+    <header class="top">
+      <div>
+        <a class="wordmark" href="index.html" style="font-size:clamp(2rem,5vw,3rem)">Hangar</a>
+        <p class="tagline">Spend coins to customize your ship. Try anything on before you buy it.</p>
+      </div>
+      <div>
+        <div class="player"><div class="stat"><span class="coin" aria-hidden="true"></span><strong id="coins">0</strong>coins</div></div>
+        <nav class="nav" aria-label="Main"><a href="index.html">Back to games</a><a href="leaderboards.html">Leaderboards</a></nav>
+      </div>
+    </header>
+    <main class="hangar" id="main" hidden>
+      <div>
+        <div class="preview"><canvas id="preview" aria-label="Preview of your ship"></canvas></div>
+        <div class="panel" style="margin-top:18px">
+          <h2 id="tryName">Your ship</h2>
+          <p id="tryInfo" class="note">Pick something on the right to try it on.</p>
+          <div class="actions">
+            <button class="btn btn-primary" id="buyBtn" type="button" hidden>Buy</button>
+            <button class="btn btn-ghost" id="cancelBtn" type="button" hidden>Take it off</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="tabs" role="tablist" id="tabs"></div>
+        <div class="items" id="items" role="tabpanel"></div>
+      </div>
+    </main>
+    <p id="loading">Loading…</p>
+  </div>
+  <div class="toast" id="toast" hidden role="status"></div>
+  <script src="js/config.js"></script>
+  <script src="js/games.js"></script>
+  <script src="js/problems.js"></script>
+  <script src="js/avatar.js"></script>
+  <script src="js/progress.js"></script>
+  <script src="js/backend.js"></script>
+  <script src="js/lock.js"></script>
+  <script src="js/help.js"></script>
+  <script src="js/hangar.js"></script>
+</body>
+</html>

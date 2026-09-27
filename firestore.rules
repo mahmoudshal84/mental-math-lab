@@ -1,0 +1,90 @@
+rules_version = '2';
+
+// Mental Math Lab: Firestore security rules
+// 1. Replace PASTE_YOUR_ADMIN_UID_HERE below with your admin User UID.
+// 2. Paste this whole file into Firebase console → Firestore Database → Rules, then click Publish.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() { return request.auth != null && request.auth.uid == 'PASTE_YOUR_ADMIN_UID_HERE'; }
+    function isSelf(uid) { return request.auth != null && request.auth.uid == uid; }
+    function student(uid) { return get(/databases/$(database)/documents/students/$(uid)).data; }
+
+    // Site settings (site open/locked, Arcade open/locked, lock message). Only the admin can change them.
+    match /site/{doc} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    // Students can only save while the site is open. After the teacher locks it,
+    // there's a 3 minute grace period so runs that were in progress still save.
+    function siteOpen() {
+      let path = /databases/$(database)/documents/site/settings;
+      return !exists(path)
+          || get(path).data.get('open', true) != false
+          || request.time < get(path).data.changedAt + duration.value(3, 'm');
+    }
+
+    // Boss drawings (pictures uploaded by the teacher, one per boss). Anyone signed in can see them.
+    match /bosses/{id} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // Student profiles (name, username, grade). Only the admin can change them.
+    match /students/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Student passwords, so the teacher can look them up. Admin only.
+    match /secrets/{uid} {
+      allow read, write: if isAdmin();
+    }
+
+    // Progress: stars, XP, coins, ship items. Students can save their own,
+    // but XP can't go down and coins/XP can't jump by huge amounts in one save.
+    match /progress/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+      allow create: if isAdmin() || (isSelf(uid) && request.resource.data.xp == 0 && request.resource.data.coins == 0);
+      allow update: if isAdmin() || (isSelf(uid) && siteOpen() && validProgress());
+      allow delete: if isAdmin();
+    }
+    function validProgress() {
+      let d = request.resource.data;
+      let o = resource.data;
+      return d.coins is int && d.coins >= 0 && d.coins <= o.coins + 2000
+          && d.xp is int && d.xp >= o.xp && d.xp <= o.xp + 500;
+    }
+
+    // Weekly leaderboards: weeks/{week}/{g6|g7|g8|school}/{uid}
+    match /weeks/{week}/{board}/{uid} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin() || (isSelf(uid) && siteOpen() && validEntry(board, uid, 3000));
+    }
+
+    // All-time leaderboards: alltime/{g6|g7|g8|school}/players/{uid}
+    match /alltime/{board}/players/{uid} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin() || (isSelf(uid) && siteOpen() && validEntry(board, uid, 50000));
+    }
+
+    // A student can only post under their own name, in their own grade's board,
+    // with believable numbers.
+    function validEntry(board, uid, maxXp) {
+      let s = student(uid);
+      let d = request.resource.data;
+      return d.name == s.displayName
+          && (board == 'school' || board == 'g' + string(s.grade))
+          && d.keys().hasOnly(['name', 'avatar', 'grade', 'xp', 'answered', 'correct', 'improve',
+                               'lane', 'blast', 'total', 'line', 'target'])
+          && (!('xp' in d) || (d.xp is int && d.xp >= 0 && d.xp <= maxXp))
+          && (!('improve' in d) || (d.improve is number && d.improve <= 100))
+          && okScore(d, 'lane') && okScore(d, 'blast') && okScore(d, 'total') && okScore(d, 'line') && okScore(d, 'target');
+    }
+    // Arcade scores, one per game
+    function okScore(d, k) {
+      return !(k in d) || (d[k] is int && d[k] >= 0 && d[k] <= 100000);
+    }
+  }
+}

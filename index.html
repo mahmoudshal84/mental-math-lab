@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mental Math Lab</title>
+  <meta name="description" content="Mental math practice games for grades 6 to 8.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Lexend:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+</head>
+<body data-themed>
+  <!-- Loading -->
+  <div class="view-center" id="loadingView"><p>Loading…</p></div>
+
+  <!-- Student login -->
+  <div class="view-center" id="loginView" hidden>
+    <div class="login">
+      <span class="wordmark">Mental<br>Math Lab</span>
+      <form class="panel" id="loginForm">
+        <h2>Log in</h2>
+        <label class="field">Username <input id="lUser" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="Like MayaR" required></label>
+        <label class="field">Password <input id="lPass" type="password" autocomplete="current-password" required></label>
+        <p class="error" id="lErr" role="alert"></p>
+        <button class="btn btn-primary btn-block" id="lBtn" type="submit">Log in</button>
+        <p class="note" id="demoHint" hidden>Demo mode: log in with <b>SamD</b> and <b>demo123</b>.</p>
+        <a class="small-link" href="admin.html">Teacher login</a>
+      </form>
+    </div>
+  </div>
+
+  <!-- Signed in as the teacher -->
+  <div class="view-center" id="teacherView" hidden>
+    <div class="panel login">
+      <h2>You're signed in as the teacher</h2>
+      <p>Students log in on this page. To manage accounts, go to the admin page.</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="admin.html">Admin page</a>
+        <button class="btn btn-ghost" type="button" id="tLogout">Log out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Student hub -->
+  <div class="wrap" id="hubView" hidden>
+    <header class="top">
+      <div>
+        <a class="wordmark" href="index.html">Mental<br>Math Lab</a>
+        <p class="tagline">Pick a topic, pick a game, and get faster at math in your head.</p>
+      </div>
+      <div>
+        <p class="hello" id="hello"></p>
+        <div class="player" aria-label="Your progress">
+          <div class="stat"><span class="coin" aria-hidden="true"></span><strong id="coins">0</strong>coins</div>
+          <div class="stat"><span class="stars" aria-hidden="true">★</span> <strong id="starCount">0</strong>stars</div>
+          <div class="stat"><strong id="xp">0</strong>XP</div>
+        </div>
+        <nav class="nav" aria-label="Main">
+          <a href="hangar.html">Hangar</a>
+          <a href="leaderboards.html">Leaderboards</a>
+          <button type="button" id="logout">Log out</button>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="banner" id="teacherBanner" hidden>
+        <span>Your teacher picked <strong id="tbTopic"></strong>.</span>
+        <button type="button" id="tbChange">Choose my own topic</button>
+      </section>
+
+      <section id="topicPick" aria-labelledby="h-topic">
+        <h2 id="h-topic">What are you practicing?</h2>
+        <div class="topics" id="topics"></div>
+        <h3 id="h-level">Level</h3>
+        <div class="levels" id="levels" aria-labelledby="h-level"></div>
+        <p class="hint" id="unlockHint"></p>
+      </section>
+
+      <section aria-labelledby="h-games">
+        <h2 id="h-games">Pick a game</h2>
+        <div class="game-grid" id="gameGrid"></div>
+
+        <div class="arcade">
+          <div>
+            <h3>Arcade</h3>
+            <p>Endless mode that gets harder the longer you last. Everyone gets the same kinds of problems, so the leaderboards are fair.</p>
+            <div class="tabs" role="tablist" id="arcTabs" aria-label="Arcade game"></div>
+          </div>
+          <p class="arc-closed" id="arcClosed" hidden>🔒 Arcade is closed right now. Your teacher will open it.</p>
+          <div class="actions" id="arcActions">
+            <a class="btn" id="arcGrade" href="#">Grade mix<small id="arcGradeBest"></small></a>
+            <a class="btn" id="arcSchool" href="#">School mix<small id="arcSchoolBest"></small></a>
+          </div>
+        </div>
+
+        <div class="boss-card">
+          <div>
+            <h3>Class Boss Battle</h3>
+            <p>When your teacher starts a battle, the whole class teams up to take down a boss. Right answers hit it. Wrong answers heal it.</p>
+          </div>
+          <a class="btn" href="boss.html">Join the battle</a>
+        </div>
+
+        <div class="trophies" aria-labelledby="h-trophies">
+          <h3 id="h-trophies">Boss trophies</h3>
+          <p class="hint" id="trophyHint"></p>
+          <div class="trophy-grid" id="trophies"></div>
+          <h4 id="logTitle" hidden>Recent battles</h4>
+          <ul class="battle-log" id="battleLog"></ul>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/games.js"></script>
+  <script src="js/problems.js"></script>
+  <script src="js/avatar.js"></script>
+  <script src="js/progress.js"></script>
+  <script src="js/backend.js"></script>
+  <script src="js/lock.js"></script>
+  <script src="js/help.js"></script>
+  <script src="js/boss-art.js"></script>
+  <script src="js/hub.js"></script>
+</body>
+</html>

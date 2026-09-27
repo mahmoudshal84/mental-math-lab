@@ -1,0 +1,23 @@
+{
+  "rules": {
+    "battle": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.uid === 'PASTE_YOUR_ADMIN_UID_HERE'",
+      "hp": {
+        ".write": "auth != null && newData.exists() && data.exists() && data.parent().child('active').val() === true",
+        ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= data.parent().child('maxHp').val() && data.val() - newData.val() <= 90 && newData.val() - data.val() <= 10"
+      },
+      "players": {
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid && root.child('battle/active').val() === true",
+          "name": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "avatar": { ".validate": "newData.hasChildren()" },
+          "damage": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
+          "correct": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+          "answered": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+          "$other": { ".validate": false }
+        }
+      }
+    }
+  }
+}

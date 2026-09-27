@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Class Boss Battle · Mental Math Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Lexend:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👾</text></svg>">
+</head>
+<body class="boss-page" data-themed>
+  <div class="boss-wrap">
+    <header class="boss-top">
+      <a class="nav-back" href="index.html" id="backLink">Back to games</a>
+      <div class="boss-title"><h1 id="bossName">Class Boss Battle</h1><p class="boss-credit" id="bossCredit" hidden></p></div>
+      <div class="boss-time" id="bossTime"></div>
+    </header>
+    <div class="hpbar" role="progressbar" aria-label="Boss health" aria-valuemin="0" aria-valuemax="100" id="hpbar"><span id="hpfill"></span><b id="hptext"></b></div>
+    <div class="boss-grid">
+      <div class="boss-stage"><canvas id="bossCanvas" aria-label="The boss"></canvas></div>
+      <aside class="boss-side">
+        <h2>Top damage</h2>
+        <ol class="dmg-list" id="dmgList"></ol>
+        <p class="note" id="playerCount"></p>
+        <div class="you" id="youBox" hidden>
+          <p><b id="youDmg">0</b> damage from you</p>
+          <p id="youCount"></p>
+        </div>
+      </aside>
+    </div>
+    <section class="boss-q" id="qBox" hidden>
+      <p class="boss-prompt" id="qPrompt"></p>
+      <div class="boss-choices" id="qChoices"></div>
+      <p class="boss-fb" id="qFb" aria-live="polite"></p>
+    </section>
+    <section class="panel boss-msg" id="waitBox" hidden>
+      <h2 id="waitTitle">No boss battle right now</h2>
+      <p id="waitText">When your teacher starts one, it will show up here by itself. Keep this page open.</p>
+      <div class="actions" id="waitActions"><a class="btn btn-primary" href="index.html">Back to games</a></div>
+    </section>
+  </div>
+  <script src="js/config.js"></script>
+  <script src="js/games.js"></script>
+  <script src="js/problems.js"></script>
+  <script src="js/avatar.js"></script>
+  <script src="js/progress.js"></script>
+  <script src="js/backend.js"></script>
+  <script src="js/lock.js"></script>
+  <script src="js/boss-art.js"></script>
+  <script src="js/boss.js"></script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Leaderboards · Mental Math Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Lexend:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>">
+</head>
+<body data-themed>
+  <div class="wrap">
+    <header class="top">
+      <div>
+        <a class="wordmark" href="index.html" style="font-size:clamp(2rem,5vw,3rem)">Leader&shy;boards</a>
+        <p class="tagline">See how you stack up against your grade and the whole school.</p>
+      </div>
+      <nav class="nav" aria-label="Main" id="nav"><a href="index.html">Back to games</a><a href="hangar.html">Hangar</a></nav>
+    </header>
+    <div class="lb-controls">
+      <div class="lb-row">
+        <div class="seg" role="tablist" id="periodTabs" aria-label="Time period"></div>
+        <label id="gradePick" hidden>Grade <select id="gradeSel"><option>6</option><option>7</option><option>8</option></select></label>
+        <p class="lb-reset" id="resetNote"></p>
+      </div>
+      <div class="lb-row">
+        <span class="lb-label">Arcade game:</span>
+        <div class="chips" role="tablist" id="gameTabs" aria-label="Arcade game"></div>
+      </div>
+    </div>
+    <div class="lb-grid" id="boards"></div>
+  </div>
+  <script src="js/config.js"></script>
+  <script src="js/games.js"></script>
+  <script src="js/problems.js"></script>
+  <script src="js/avatar.js"></script>
+  <script src="js/progress.js"></script>
+  <script src="js/backend.js"></script>
+  <script src="js/lock.js"></script>
+  <script src="js/help.js"></script>
+  <script src="js/leaderboards.js"></script>
+</body>
+</html>
