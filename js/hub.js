@@ -69,6 +69,7 @@
       onSettings(s) { $("arcClosed").hidden = s.arcadeOpen; $("arcActions").hidden = !s.arcadeOpen; },
     });
     renderTrophies();
+    showFriendRequests();
     $("coins").textContent = prog.coins;
     $("starCount").textContent = PR.totalStars(prog);
     $("xp").textContent = prog.xp;
@@ -179,6 +180,15 @@
 
     // Boss trophies: one card per boss (topic), using the student drawing if the teacher uploaded one.
     // Each card shows this student's own damage: the total across their battles and their best single battle.
+    // Friends: add this student to the name list, then show how many friend requests are waiting
+    async function showFriendRequests() {
+      await B.people.sync(user, prog.avatar);
+      try {
+        const n = (await B.friends.list(user)).filter((f) => f.status === "pending" && f.to === user.uid).length;
+        $("friendBadge").textContent = n; $("friendBadge").hidden = !n;
+        $("friendsLink").setAttribute("aria-label", n ? `Friends, ${n} new request${n > 1 ? "s" : ""}` : "Friends");
+      } catch (e) { }
+    }
     async function renderTrophies() {
       const list = prog.bosses || [], grid = $("trophies");
       const winsAll = list.filter((b) => b.won).length;

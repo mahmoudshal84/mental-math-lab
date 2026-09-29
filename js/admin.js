@@ -46,7 +46,7 @@
     setupAccess();
     setupBoss();
     setupDrawn();
-    load();
+    load().then(setupFriends);
   }
 
   async function load() {
@@ -57,6 +57,7 @@
     }
     catch (e) { $("rows").innerHTML = ""; const tr = document.createElement("tr"); tr.innerHTML = "<td colspan='9'></td>"; tr.firstChild.textContent = e.message; $("rows").appendChild(tr); return; }
     renderRows();
+    if (friendsReady) loadFriends(); // a deleted student's friendships disappear too
   }
 
   function visible() {
@@ -175,6 +176,60 @@
       area.appendChild(c);
     }
     window.print();
+  }
+
+  /* Friends: every friendship and request, with a Remove button */
+  let friendships = [], friendsReady = false;
+  async function setupFriends() {
+    friendsReady = true;
+    $("fSearch").oninput = renderFriends;
+    // Put every student in the name list once, so classmates can find them right away
+    try {
+      if (!localStorage.getItem("mml-people-filled")) {
+        const n = await B.admin.fillPeople();
+        localStorage.setItem("mml-people-filled", "1");
+        if (n) toast(`Added ${n} student${n > 1 ? "s" : ""} to the friends name list`);
+      }
+    } catch (e) { $("fErr").textContent = e.message; }
+    loadFriends();
+  }
+  async function loadFriends() {
+    try { friendships = await B.admin.friendships(); $("fErr").textContent = ""; }
+    catch (e) { $("fErr").textContent = e.message; friendships = []; }
+    renderFriends();
+  }
+  function renderFriends() {
+    const names = Object.assign({}, B.admin.demoNames ? B.admin.demoNames() : {});
+    for (const s of students) names[s.uid] = s.displayName;
+    const nm = (uid) => names[uid] || "(deleted student)";
+    const q = $("fSearch").value.trim().toLowerCase();
+    const order = { pending: 0, accepted: 1, declined: 2 };
+    const list = friendships
+      .filter((f) => !q || nm(f.users[0]).toLowerCase().includes(q) || nm(f.users[1]).toLowerCase().includes(q))
+      .sort((a, b) => order[a.status] - order[b.status] || b.at - a.at);
+    const acc = friendships.filter((f) => f.status === "accepted").length;
+    $("fCount").textContent = `${acc} friendship${acc === 1 ? "" : "s"}, ${friendships.length - acc} request${friendships.length - acc === 1 ? "" : "s"}`;
+    const body = $("fRows"); body.innerHTML = "";
+    if (!list.length) { body.innerHTML = `<tr><td colspan="5">${friendships.length ? "No matches." : "No friendships yet."}</td></tr>`; return; }
+    for (const f of list) {
+      const tr = document.createElement("tr");
+      // Show the student who sent the request first
+      const status = f.status === "accepted" ? "Friends" : f.status === "pending" ? "Request waiting" : "Declined";
+      [nm(f.from), nm(f.to), status, ago(f.at)].forEach((v, i) => {
+        const td = document.createElement("td"); td.textContent = v;
+        if (i === 2) td.className = f.status;
+        tr.appendChild(td);
+      });
+      const td = document.createElement("td"), b = document.createElement("button");
+      b.type = "button"; b.className = "mini danger"; b.textContent = "Remove";
+      b.onclick = async () => {
+        if (!confirm(`Remove the ${f.status === "accepted" ? "friendship" : "request"} between ${nm(f.from)} and ${nm(f.to)}?`)) return;
+        b.disabled = true;
+        try { await B.admin.removeFriendship(f.id); toast("Removed"); await loadFriends(); }
+        catch (e) { alert(e.message); b.disabled = false; }
+      };
+      td.appendChild(b); tr.appendChild(td); body.appendChild(tr);
+    }
   }
 
   /* Site access: lock/unlock the whole site and Arcade */

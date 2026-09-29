@@ -8,6 +8,7 @@ MML.siteLock = {
   start(user, hooks = {}) {
     if (!user || user.isAdmin) return;
     const B = MML.backend;
+    if (B.people) B.people.heartbeat(user); // keeps the "Online now" dot on the Friends page up to date
     let box = null, shownKind = null;
 
     function show(kind, s) {

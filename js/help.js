@@ -52,6 +52,12 @@ MML.help = (function () {
         <p>Spend coins in the <b>Hangar</b> on your ship's shape, color, decoration, and trail, a background for the games, and a background for the whole website.
         You can try anything on before you buy it.</p>
         <p>Everything in the Hangar is just for looks. It never makes the math easier or harder.</p>`],
+      ["🤝", "Friends", `
+        <p>On the <b>Friends</b> page, type a classmate's username (like MayaR) to send them a friend request.
+        When they accept, you'll see each other in your friends list, along with a green dot when they're online.</p>
+        <p>A red number on the <b>Friends</b> button means someone sent you a request. You can accept it or say no thanks.
+        You can have up to ${MML.backend.maxFriends} friends, and you can remove a friend at any time.</p>
+        <p>Your teacher can see everyone's friends list.</p>`],
       ["👾", "Class Boss Battles", `
         <p>Your teacher starts a battle, and everyone who clicks <b>Join the battle</b> fights the same boss together.</p>
         <ul><li>A right answer deals 10 damage, or 20 to 30 on a streak.</li>
