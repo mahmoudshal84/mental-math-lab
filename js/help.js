@@ -60,7 +60,7 @@ MML.help = (function () {
         <p>Your teacher can see everyone's friends list.</p>`],
       ["🏁", "Versus", `
         <p>Click <b>Play Versus</b> on the home page, pick a game, and start a match, or join one with a 4-letter room code.
-        The player who starts a match can invite friends and picks the topic and level.</p>
+        The player who starts a match can invite friends. Every match uses a mix of all six topics, levels 1 and 2.</p>
         <p><b>Blast Battle</b> is for 2 to 4 players, everyone for themselves. The same 20 problems fall on everyone's screen at the same time.
         The first player to type the answer and press Enter blasts it and gets the point. Problems that hit the ground don't count for anyone. Most points wins.</p>
         <p><b>Race to 5</b> is a team race:</p>

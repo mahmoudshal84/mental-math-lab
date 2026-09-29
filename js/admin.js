@@ -214,7 +214,7 @@
               : `Playing round ${g ? g.round : 1}`;
           }
           const tr = document.createElement("tr");
-          const topic = P.strands[r.topic] ? `${P.strands[r.topic].name}, level ${r.level}` : "";
+          const topic = P.strands[r.topic] ? `${P.strands[r.topic].name}, level ${r.level}` : "Mix, levels 1–2";
           const mins = Math.max(0, Math.round((now - (r.created || now)) / 60000));
           const when = mins < 1 ? "Just now" : mins < 60 ? `${mins} min ago` : ago(r.created);
           [c, blast ? "Blast Battle" : "Race to 5", who, status, topic, when].forEach((v) => {

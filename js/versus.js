@@ -10,7 +10,8 @@
    win 2 rounds wins the match. Coins: 1 per problem you clear. No XP, stars, or leaderboards.
 
    Match data lives in the Realtime Database at rooms/{CODE}:
-     host, mode ("race" or "blast"), topic, level, created, state ("lobby" or "playing")
+     host, mode ("race" or "blast"), created, state ("lobby" or "playing")
+     Every match uses the same problems: a mix of all six topics at levels 1 and 2 (MIX below).
      players/{uid}: name, avatar, team ("a" or "b"), on (connected), joined
      game: round, seed, start (when the round starts), size (players per team),
            wins {a, b}, result {r1: "a", ...}, winner, forfeit
@@ -69,20 +70,26 @@
   const myTeam = () => (me() ? me().team : "a");
   const newSeed = () => 1 + Math.floor(Math.random() * 2147483000);
   const meEntry = (t) => ({ name: user.profile.displayName, avatar: AV.clean(prog.avatar), team: t, on: true, joined: L.now() });
-  const levelName = (t, n) => P.strands[t].levels[n - 1].name;
+  // Every Versus board draws from all six topics, levels 1 and 2
+  const MIX = P.order.flatMap((t) => [1, 2].map((l) => [t, l]));
 
   /* ---------- The board: every screen builds the same problems from the round's seed ---------- */
   function seeded(seed) {
     let a = seed >>> 0;
     return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   }
-  function makeBoard(seed, topic, level, n) {
-    const real = Math.random, list = [];
-    Math.random = seeded(seed);
+  function makeBoard(seed, n) {
+    const real = Math.random, list = [], rnd = seeded(seed);
+    Math.random = rnd;
     try {
+      // Shuffle the topic/level mix, then take turns through it, so every board gets a spread of topics
+      const order = MIX.slice();
+      for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+      let k = 0;
       for (let pass = 0; pass < 3 && list.length < n; pass++) {
         for (let tries = 0; list.length < n && tries < n * 60; tries++) {
-          const q = P.generate(topic, level);
+          const [t, l] = order[k++ % order.length];
+          const q = P.generate(t, l);
           if (!P.typable(q.answer) || list.some((x) => x.prompt === q.prompt)) continue;
           // Different answers when possible, so one answer only ever fits one problem
           if (pass === 0 && list.some((x) => P.matches(q.answer, x.answer))) continue;
@@ -93,31 +100,18 @@
     return list;
   }
   function boardFor(g) {
-    if (board.seed !== g.seed) { board = { seed: g.seed, list: makeBoard(g.seed, room.topic, room.level, g.size * PER_PLAYER) }; pending.clear(); }
+    if (board.seed !== g.seed) { board = { seed: g.seed, list: makeBoard(g.seed, g.size * PER_PLAYER) }; pending.clear(); }
     return board.list;
   }
   const clearedBy = (g, t) => (room.boards && room.boards["r" + g.round] && room.boards["r" + g.round][t]) || {};
   const countOf = (obj) => Object.values(obj).filter(Boolean).length;
 
   /* ---------- Menu ---------- */
-  function fillTopic(sel, value) {
-    sel.innerHTML = "";
-    for (const id of P.order) sel.appendChild(new Option(P.strands[id].name, id, false, id === value));
-  }
-  function fillLevel(sel, topic, value) {
-    sel.innerHTML = "";
-    const top = PR.unlocked(prog, topic);
-    for (let n = 1; n <= top; n++) sel.appendChild(new Option(`${n}: ${levelName(topic, n)}`, n, false, n === value));
-  }
   function showMenu(msg) {
     cleanup();
     view("menu");
     history.replaceState(null, "", "versus.html");
     $("joinErr").textContent = msg || "";
-    const lastTopic = localStorage.getItem("mml-vs-topic") || "facts";
-    fillTopic($("mTopic"), P.strands[lastTopic] ? lastTopic : "facts");
-    fillLevel($("mLevel"), $("mTopic").value, PR.unlocked(prog, $("mTopic").value));
-    $("mTopic").onchange = () => fillLevel($("mLevel"), $("mTopic").value, PR.unlocked(prog, $("mTopic").value));
     const lastMode = localStorage.getItem("mml-vs-mode") === "blast" ? "blast" : "race";
     document.querySelector(`input[name=mode][value=${lastMode}]`).checked = true;
     showRecord();
@@ -130,15 +124,14 @@
   }
   $("createBtn").onclick = async () => {
     const btn = $("createBtn"); btn.disabled = true; $("createErr").textContent = "";
-    const topic = $("mTopic").value, level = +$("mLevel").value;
     const gameMode = document.querySelector("input[name=mode]:checked").value === "blast" ? "blast" : "race";
-    try { localStorage.setItem("mml-vs-topic", topic); localStorage.setItem("mml-vs-mode", gameMode); } catch (e) { }
+    try { localStorage.setItem("mml-vs-mode", gameMode); } catch (e) { }
     let lastErr = null;
     for (let i = 0; i < 6; i++) {
       const c = Array.from({ length: 4 }, () => CODE_LETTERS[Math.floor(Math.random() * CODE_LETTERS.length)]).join("");
       try {
         if (await L.get("rooms/" + c)) continue; // that code is taken
-        await L.set("rooms/" + c, { host: user.uid, mode: gameMode, topic, level, created: L.now(), state: "lobby", players: { [user.uid]: meEntry("a") } });
+        await L.set("rooms/" + c, { host: user.uid, mode: gameMode, created: L.now(), state: "lobby", players: { [user.uid]: meEntry("a") } });
         btn.disabled = false;
         return enter(c);
       } catch (e) { lastErr = e; }
@@ -276,7 +269,6 @@
     }
     const mine = myTeam(), otherCount = team(other(mine)).length;
     $("switchBtn").hidden = otherCount >= MAX_TEAM;
-    renderSetup(isHost);
     $("switchBtn").textContent = `Switch to ${TEAM_NAME[other(mine)]}`;
     $("botBtn").disabled = players().length >= MAX_TEAM * 2;
 
@@ -290,16 +282,6 @@
       : !allHere ? "Waiting for everyone to reconnect…"
       : isHost ? "Ready when you are!" : "Waiting for the host to start…";
   }
-  // Topic and level: the host picks from levels they've unlocked
-  function renderSetup(isHost) {
-    $("hostSetup").hidden = !isHost; $("guestSetup").hidden = isHost;
-    if (isHost) {
-      if (document.activeElement !== $("lTopic") && document.activeElement !== $("lLevel")) {
-        fillTopic($("lTopic"), room.topic);
-        fillLevel($("lLevel"), room.topic, Math.min(room.level, PR.unlocked(prog, room.topic)));
-      }
-    } else $("guestSetup").innerHTML = `<b>${P.strands[room.topic].name}</b>, level ${room.level}: ${levelName(room.topic, room.level)}`;
-  }
   const colorOf = (uid) => COLORS[Math.max(0, players().findIndex((p) => p.uid === uid)) % COLORS.length];
   function renderBlastLobby() {
     const isHost = room.host === user.uid, ps = players();
@@ -308,7 +290,6 @@
     for (let i = ps.length; i < BLAST_MAX; i++) { const li = document.createElement("li"); li.className = "open"; li.textContent = "Open spot"; ul.appendChild(li); }
     $("switchBtn").hidden = true;
     $("botBtn").disabled = ps.length >= BLAST_MAX;
-    renderSetup(isHost);
     const allHere = ps.every((p) => p.on !== false), ready = ps.length >= 2 && allHere;
     $("startBtn").hidden = !isHost;
     $("startBtn").disabled = !ready;
@@ -316,11 +297,6 @@
     $("startHint").textContent = ps.length < 2 ? "Waiting for at least one more player…" : !allHere ? "Waiting for everyone to reconnect…"
       : isHost ? "Ready when you are!" : "Waiting for the host to start…";
   }
-  $("lTopic").onchange = () => {
-    const t = $("lTopic").value;
-    L.update("rooms/" + code, { topic: t, level: PR.unlocked(prog, t) }).catch((e) => toast(e.message));
-  };
-  $("lLevel").onchange = () => L.update("rooms/" + code, { level: +$("lLevel").value }).catch((e) => toast(e.message));
   $("switchBtn").onclick = () => L.update(`rooms/${code}/players/${user.uid}`, { team: other(myTeam()) }).catch((e) => toast(e.message));
   $("leaveBtn").onclick = () => leave();
   $("raceLeave").onclick = () => {
@@ -596,7 +572,7 @@
   // Every screen builds the same falling schedule from the seed and start time
   function blastBoardFor(g) {
     if (blast.seed === g.seed) return blast.list;
-    const qs = makeBoard(g.seed, room.topic, room.level, g.n || BLAST_N);
+    const qs = makeBoard(g.seed, g.n || BLAST_N);
     const rnd = seeded((g.seed ^ 0x5bd1e995) >>> 0);
     let lastLane = -1;
     const list = qs.map((q, i) => {
