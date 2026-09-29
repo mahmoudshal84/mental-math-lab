@@ -35,10 +35,7 @@
               <span><b>Blast Battle</b>Everyone for themselves, 2 to 4 players. First to type the answer blasts the problem.</span></label>
           </div>
           <p class="note">You'll get a room code to share, and you can invite friends.</p>
-          <div class="row">
-            <label class="field">Topic <select id="mTopic"></select></label>
-            <label class="field">Level <select id="mLevel"></select></label>
-          </div>
+          <p class="mix-note">Problems are a mix of all six topics, levels 1 and 2.</p>
           <p class="error" id="createErr" role="alert"></p>
           <button class="btn btn-primary" id="createBtn" type="button">Start a match</button>
         </section>
@@ -88,13 +85,7 @@
             <button class="btn btn-ghost" id="switchBtn" type="button">Switch team</button>
             <button class="btn btn-ghost" id="botBtn" type="button" hidden>Add a pretend player</button>
           </div>
-          <div class="lobby-setup">
-            <div id="hostSetup" class="row">
-              <label class="field">Topic <select id="lTopic"></select></label>
-              <label class="field">Level <select id="lLevel"></select></label>
-            </div>
-            <p id="guestSetup" class="setup-text" hidden></p>
-          </div>
+          <p class="mix-note">Problems are a mix of all six topics, levels 1 and 2.</p>
           <p class="start-hint" id="startHint"></p>
           <div class="actions">
             <button class="btn btn-primary" id="startBtn" type="button">Start match</button>
