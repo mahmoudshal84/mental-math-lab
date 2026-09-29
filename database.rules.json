@@ -10,12 +10,91 @@
       "players": {
         "$uid": {
           ".write": "auth != null && auth.uid === $uid && root.child('battle/active').val() === true",
-          "name": { ".validate": "newData.isString() && newData.val().length <= 40" },
-          "avatar": { ".validate": "newData.hasChildren()" },
-          "damage": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
-          "correct": { ".validate": "newData.isNumber() && newData.val() >= 0" },
-          "answered": { ".validate": "newData.isNumber() && newData.val() >= 0" },
-          "$other": { ".validate": false }
+          "name": {
+            ".validate": "newData.isString() && newData.val().length <= 40"
+          },
+          "avatar": {
+            ".validate": "newData.hasChildren()"
+          },
+          "damage": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000"
+          },
+          "correct": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          },
+          "answered": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "rooms": {
+      ".read": "auth != null && auth.uid === 'PASTE_YOUR_ADMIN_UID_HERE'",
+      ".write": "auth != null && auth.uid === 'PASTE_YOUR_ADMIN_UID_HERE'",
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && ((!data.exists() && newData.child('host').val() === auth.uid && newData.child('state').val() === 'lobby') || (data.exists() && !newData.exists() && data.child('host').val() === auth.uid))",
+        ".validate": "$code.matches(/^[A-Z]{4}$/) && newData.hasChildren(['host', 'state', 'players'])",
+        "host": {
+          ".write": "auth != null && root.child('rooms').child($code).child('players').child(auth.uid).exists()",
+          ".validate": "newData.isString() && newData.parent().child('players').child(newData.val()).exists()"
+        },
+        "topic": {
+          ".write": "auth != null && root.child('rooms').child($code).child('host').val() === auth.uid",
+          ".validate": "newData.isString() && newData.val().length <= 20"
+        },
+        "level": {
+          ".write": "auth != null && root.child('rooms').child($code).child('host').val() === auth.uid",
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 4"
+        },
+        "created": {
+          ".validate": "newData.isNumber()"
+        },
+        "state": {
+          ".write": "auth != null && root.child('rooms').child($code).child('players').child(auth.uid).exists()",
+          ".validate": "newData.val() === 'lobby' || newData.val() === 'playing'"
+        },
+        "game": {
+          ".write": "auth != null && root.child('rooms').child($code).child('players').child(auth.uid).exists()"
+        },
+        "boards": {
+          ".write": "auth != null && !newData.exists() && root.child('rooms').child($code).child('host').val() === auth.uid",
+          "$round": {
+            "$team": {
+              "$tile": {
+                ".write": "auth != null && !data.exists() && newData.val() === auth.uid && root.child('rooms').child($code).child('players').child(auth.uid).child('team').val() === $team"
+              }
+            }
+          }
+        },
+        "players": {
+          "$uid": {
+            ".write": "auth != null && ((auth.uid === $uid && (data.exists() || root.child('rooms').child($code).child('state').val() === 'lobby')) || (!newData.exists() && root.child('rooms').child($code).child('host').val() === auth.uid))",
+            "name": {
+              ".validate": "newData.isString() && newData.val().length <= 40"
+            },
+            "avatar": {
+              ".validate": "newData.hasChildren()"
+            },
+            "team": {
+              ".validate": "newData.val() === 'a' || newData.val() === 'b'"
+            },
+            "on": {
+              ".validate": "newData.isBoolean()"
+            },
+            "joined": {
+              ".validate": "newData.isNumber()"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        },
+        "$other": {
+          ".validate": false
         }
       }
     }

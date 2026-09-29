@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Versus · Mental Math Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Lexend:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏁</text></svg>">
+</head>
+<body data-themed>
+  <div class="wrap" id="wrap">
+    <header class="top" id="vsHeader">
+      <div>
+        <a class="wordmark" href="index.html" style="font-size:clamp(2rem,5vw,3rem)">Versus</a>
+        <p class="tagline">Race to 5: clear your team's board before the other team clears theirs.</p>
+      </div>
+      <div>
+        <nav class="nav" aria-label="Main"><a href="index.html">Back to games</a><a href="friends.html">Friends</a></nav>
+      </div>
+    </header>
+    <p id="loading">Loading…</p>
+
+    <!-- Start or join -->
+    <main id="menuView" hidden>
+      <div class="vs-menu">
+        <section class="panel">
+          <h2>Start a match</h2>
+          <p class="note">You'll get a room code to share, and you can invite friends.</p>
+          <div class="row">
+            <label class="field">Topic <select id="mTopic"></select></label>
+            <label class="field">Level <select id="mLevel"></select></label>
+          </div>
+          <p class="error" id="createErr" role="alert"></p>
+          <button class="btn btn-primary" id="createBtn" type="button">Start a match</button>
+        </section>
+        <form class="panel" id="joinForm">
+          <h2>Join a match</h2>
+          <p class="note">Type the 4-letter room code from the player who started it.</p>
+          <label class="field">Room code
+            <input id="joinCode" class="code-input" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="BKTZ" required>
+          </label>
+          <p class="error" id="joinErr" role="alert"></p>
+          <button class="btn btn-primary" id="joinBtn" type="submit">Join</button>
+        </form>
+      </div>
+      <ul class="vs-how">
+        <li><b>Same problems.</b> Both teams get the same board: 5 problems for each player on the team.</li>
+        <li><b>Type and press Enter.</b> Your answer clears whichever problem it matches. Anyone on your team can clear any problem.</li>
+        <li><b>Don't guess.</b> An answer that isn't on your board freezes your typing for a moment.</li>
+        <li><b>Best of 3.</b> The first team to win 2 rounds wins the match. You earn a coin for every problem you clear.</li>
+      </ul>
+    </main>
+
+    <!-- Lobby -->
+    <main id="lobbyView" hidden>
+      <div class="lobby">
+        <section class="panel lobby-main">
+          <div class="room-code">
+            <span>Room code</span>
+            <strong id="roomCode">····</strong>
+          </div>
+          <p class="note">Share the code, or invite friends. Teams need the same number of players, from 1 to 3 each.</p>
+          <div class="teams">
+            <div class="team-col mint">
+              <h3>Mint team</h3>
+              <ul id="teamA"></ul>
+            </div>
+            <div class="team-col pink">
+              <h3>Pink team</h3>
+              <ul id="teamB"></ul>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-ghost" id="switchBtn" type="button">Switch team</button>
+            <button class="btn btn-ghost" id="botBtn" type="button" hidden>Add a pretend player</button>
+          </div>
+          <div class="lobby-setup">
+            <div id="hostSetup" class="row">
+              <label class="field">Topic <select id="lTopic"></select></label>
+              <label class="field">Level <select id="lLevel"></select></label>
+            </div>
+            <p id="guestSetup" class="setup-text" hidden></p>
+          </div>
+          <p class="start-hint" id="startHint"></p>
+          <div class="actions">
+            <button class="btn btn-primary" id="startBtn" type="button">Start match</button>
+            <button class="btn btn-ghost" id="leaveBtn" type="button">Leave</button>
+          </div>
+        </section>
+        <aside class="panel lobby-invite" aria-labelledby="h-invite">
+          <h2 id="h-invite">Invite friends</h2>
+          <p class="note">They'll see your invite for 3 minutes.</p>
+          <ul class="invite-list" id="inviteList"><li class="note">Loading…</li></ul>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <!-- The race -->
+  <div class="race" id="gameView" hidden>
+    <div class="race-top">
+      <div class="race-round" id="raceRound">Round 1</div>
+      <div class="race-track" id="raceTrack" aria-hidden="true">
+        <div class="lane mine"><span class="ship" id="shipMine"></span></div>
+        <div class="lane theirs"><span class="ship" id="shipTheirs"></span></div>
+        <div class="finish"></div>
+      </div>
+      <div class="race-score" id="raceScore" aria-live="polite"></div>
+      <button class="btn btn-ghost race-leave" id="raceLeave" type="button">Leave</button>
+    </div>
+    <div class="race-boards">
+      <section class="race-board mine" aria-labelledby="h-mine">
+        <header><h2 id="h-mine">Your team</h2><span class="race-names" id="namesMine"></span><b class="race-count" id="countMine"></b></header>
+        <div class="tiles" id="tilesMine"></div>
+      </section>
+      <section class="race-board theirs" aria-labelledby="h-theirs">
+        <header><h2 id="h-theirs">Other team</h2><span class="race-names" id="namesTheirs"></span><b class="race-count" id="countTheirs"></b></header>
+        <div class="tiles" id="tilesTheirs"></div>
+      </section>
+    </div>
+    <form class="race-input" id="raceForm">
+      <input id="raceIn" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Your answer" placeholder="Type an answer, press Enter">
+      <button type="submit">Enter</button>
+      <p class="race-msg" id="raceMsg" role="status"></p>
+    </form>
+    <div class="race-overlay" id="raceOverlay" hidden>
+      <div class="race-card" id="raceCard"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden role="status"></div>
+  <script src="js/config.js"></script>
+  <script src="js/games.js"></script>
+  <script src="js/problems.js"></script>
+  <script src="js/avatar.js"></script>
+  <script src="js/progress.js"></script>
+  <script src="js/backend.js"></script>
+  <script src="js/lock.js"></script>
+  <script src="js/help.js"></script>
+  <script src="js/invites.js"></script>
+  <script src="js/versus.js"></script>
+</body>
+</html>

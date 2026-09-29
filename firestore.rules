@@ -111,6 +111,24 @@ service cloud.firestore {
           && d.at == request.time;
     }
 
+    // Versus invites: invites/{fromUid}_{toUid}. Students can only invite their friends, as themselves.
+    // Either student can delete an invite (joining or saying no thanks removes it).
+    match /invites/{id} {
+      allow get, delete: if isAdmin() || (request.auth != null && request.auth.uid in id.split('_'));
+      allow list: if isAdmin() || (request.auth != null && resource.data.to == request.auth.uid);
+      allow create, update: if request.auth != null && validInvite(id);
+    }
+    function validInvite(id) {
+      let d = request.resource.data;
+      let pair = d.from < d.to ? d.from + '_' + d.to : d.to + '_' + d.from;
+      return d.keys().hasOnly(['from', 'to', 'name', 'code', 'at'])
+          && d.from == request.auth.uid && d.to is string && id == d.from + '_' + d.to
+          && d.name == student(d.from).displayName
+          && d.code is string && d.code.matches('^[A-Z]{4}$')
+          && d.at == request.time
+          && get(/databases/$(database)/documents/friends/$(pair)).data.status == 'accepted';
+    }
+
     // Weekly leaderboards: weeks/{week}/{g6|g7|g8|school}/{uid}
     match /weeks/{week}/{board}/{uid} {
       allow read: if request.auth != null;
