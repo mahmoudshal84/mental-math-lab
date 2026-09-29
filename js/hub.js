@@ -66,7 +66,10 @@
 
     // Lock screen, and Arcade open/closed
     MML.siteLock.start(user, {
-      onSettings(s) { $("arcClosed").hidden = s.arcadeOpen; $("arcActions").hidden = !s.arcadeOpen; },
+      onSettings(s) {
+        $("arcClosed").hidden = s.arcadeOpen; $("arcActions").hidden = !s.arcadeOpen;
+        $("vsClosed").hidden = s.versusOpen; $("vsBtn").hidden = !s.versusOpen;
+      },
     });
     renderTrophies();
     showFriendRequests();

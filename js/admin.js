@@ -46,6 +46,7 @@
     setupAccess();
     setupBoss();
     setupDrawn();
+    setupVersus();
     load().then(setupFriends);
   }
 
@@ -178,6 +179,56 @@
     window.print();
   }
 
+  /* Versus matches: live rooms, with an End button. Old finished rooms are tidied up. */
+  function setupVersus() {
+    const L = B.live, OLD_MS = 3 * 3600000;
+    let first = true;
+    async function loadRooms() {
+      const body = $("vsRows");
+      try {
+        const all = (await L.get("rooms")) || {};
+        const now = L.now();
+        if (first) {
+          first = false;
+          for (const [c, r] of Object.entries(all))
+            if (!r.players || now - (r.created || 0) > OLD_MS) { await L.remove("rooms/" + c); delete all[c]; } // no match lasts 3 hours
+        }
+        body.innerHTML = "";
+        const list = Object.entries(all).sort((a, b) => (b[1].created || 0) - (a[1].created || 0));
+        if (!list.length) { body.innerHTML = "<tr><td colspan='7'>No matches right now.</td></tr>"; $("vsErr").textContent = ""; return; }
+        for (const [c, r] of list) {
+          const ps = Object.values(r.players || {});
+          const names = (t) => ps.filter((p) => p.team === t).map((p) => p.name + (p.on === false ? " (left)" : "")).join(", ") || "—";
+          const g = r.game;
+          const status = r.state === "lobby" ? "In the lobby"
+            : g && g.winner ? `Finished: ${g.winner === "a" ? "Mint" : "Pink"} won ${(g.wins || {})[g.winner] || 0}–${(g.wins || {})[g.winner === "a" ? "b" : "a"] || 0}`
+            : `Playing round ${g ? g.round : 1}`;
+          const tr = document.createElement("tr");
+          const topic = P.strands[r.topic] ? `${P.strands[r.topic].name}, level ${r.level}` : "";
+          const mins = Math.max(0, Math.round((now - (r.created || now)) / 60000));
+          const when = mins < 1 ? "Just now" : mins < 60 ? `${mins} min ago` : ago(r.created);
+          [c, names("a"), names("b"), status, topic, when].forEach((v, i) => {
+            const td = document.createElement("td"); td.textContent = v;
+            if (i === 1) td.className = "mint"; if (i === 2) td.className = "pink";
+            tr.appendChild(td);
+          });
+          const td = document.createElement("td"), b = document.createElement("button");
+          b.type = "button"; b.className = "mini danger"; b.textContent = "End";
+          b.onclick = async () => {
+            if (!confirm(`End match ${c}? Its players go back to the Versus menu.`)) return;
+            b.disabled = true;
+            try { await L.remove("rooms/" + c); toast(`Ended match ${c}`); loadRooms(); } catch (e) { alert(e.message); b.disabled = false; }
+          };
+          td.appendChild(b); tr.appendChild(td); body.appendChild(tr);
+        }
+        $("vsErr").textContent = "";
+      } catch (e) { body.innerHTML = ""; $("vsErr").textContent = e.message; }
+    }
+    $("vsRefresh").onclick = loadRooms;
+    loadRooms();
+    setInterval(() => { if (!document.hidden) loadRooms(); }, 20000);
+  }
+
   /* Friends: every friendship and request, with a Remove button */
   let friendships = [], friendsReady = false;
   async function setupFriends() {
@@ -239,6 +290,10 @@
       if (!s) return;
       $("siteState").innerHTML = s.open ? "Site: <b class='open'>Open</b>" : "Site: <b class='shut'>🔒 Locked</b>";
       $("arcState").innerHTML = s.arcadeOpen ? "Arcade: <b class='open'>Open</b>" : "Arcade: <b class='shut'>🔒 Locked</b>";
+      $("vsState").innerHTML = s.versusOpen ? "Versus: <b class='open'>Open</b>" : "Versus: <b class='shut'>🔒 Locked</b>";
+      $("vsBtn").textContent = s.versusOpen ? "Lock Versus" : "Open Versus";
+      $("vsBtn").className = "btn " + (s.versusOpen ? "btn-danger" : "btn-primary");
+      $("vsBtn").disabled = false;
       $("siteBtn").textContent = s.open ? "Lock the site" : "Open the site";
       $("arcBtn").textContent = s.arcadeOpen ? "Lock Arcade" : "Open Arcade";
       $("siteBtn").className = "btn " + (s.open ? "btn-danger" : "btn-primary");
@@ -257,6 +312,7 @@
     };
     $("siteBtn").onclick = (e) => s && set({ open: !s.open }, e.currentTarget);
     $("arcBtn").onclick = (e) => s && set({ arcadeOpen: !s.arcadeOpen }, e.currentTarget);
+    $("vsBtn").onclick = (e) => s && set({ versusOpen: !s.versusOpen }, e.currentTarget);
     $("lockMsgSave").onclick = async (e) => {
       await set({ message: $("lockMsgIn").value.trim().slice(0, 200) }, e.currentTarget);
       $("lockMsgNote").textContent = " Saved.";

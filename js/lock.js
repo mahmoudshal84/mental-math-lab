@@ -1,7 +1,7 @@
 /* Mental Math Lab: site lock
    Watches the teacher's settings and covers the page with a message when the
    site (or Arcade, on Arcade pages) is closed. The teacher is never locked out.
-   Use: MML.siteLock.start(user, { arcade: true/false, onLock(kind), onSettings(s) }) */
+   Use: MML.siteLock.start(user, { arcade: true/false, versus: true/false, onLock(kind), onSettings(s) }) */
 window.MML = window.MML || {};
 MML.siteLock = {
   current: { open: true, arcadeOpen: true, message: "" },
@@ -9,6 +9,8 @@ MML.siteLock = {
     if (!user || user.isAdmin) return;
     const B = MML.backend;
     if (B.people) B.people.heartbeat(user); // keeps the "Online now" dot on the Friends page up to date
+    if (MML.invites) MML.invites.start(user); // Versus invites pop up on pages that load js/invites.js
+    const closedText = { site: "", arcade: "Your teacher has closed Arcade for now. You can still play levels.", versus: "Your teacher has closed Versus for now. You can still play levels." };
     let box = null, shownKind = null;
 
     function show(kind, s) {
@@ -23,10 +25,10 @@ MML.siteLock = {
           <div class="actions" id="lockActions"></div></div>`;
         document.body.appendChild(box);
       }
-      box.querySelector("#lockTitle").textContent = kind === "site" ? "Mental Math Lab is closed right now" : "Arcade is closed right now";
+      box.querySelector("#lockTitle").textContent = kind === "site" ? "Mental Math Lab is closed right now" : kind === "versus" ? "Versus is closed right now" : "Arcade is closed right now";
       box.querySelector("#lockMsg").textContent = kind === "site"
         ? s.message || "Your teacher will open it during class. Check back then!"
-        : "Your teacher has closed Arcade for now. You can still play levels.";
+        : closedText[kind];
       const n = box.querySelector("#lockNote");
       n.textContent = note || ""; n.hidden = !note;
       const acts = box.querySelector("#lockActions");
@@ -49,7 +51,7 @@ MML.siteLock = {
     B.settings.watch((s) => {
       MML.siteLock.current = s;
       if (hooks.onSettings) hooks.onSettings(s);
-      const kind = !s.open ? "site" : hooks.arcade && !s.arcadeOpen ? "arcade" : null;
+      const kind = !s.open ? "site" : hooks.arcade && !s.arcadeOpen ? "arcade" : hooks.versus && !s.versusOpen ? "versus" : null;
       if (kind) { if (kind !== shownKind) show(kind, s); else box.querySelector("#lockMsg").textContent = kind === "site" ? s.message || "Your teacher will open it during class. Check back then!" : box.querySelector("#lockMsg").textContent; }
       else hide();
     }).catch(() => { });

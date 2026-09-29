@@ -64,7 +64,7 @@ window.MML = window.MML || {};
      ===================================================================== */
   let F = null;
   // Site settings: is the site open, is Arcade open, and the message students see when it's closed
-  const normSettings = (d) => ({ open: !d || d.open !== false, arcadeOpen: !d || d.arcadeOpen !== false, message: (d && d.message) || "" });
+  const normSettings = (d) => ({ open: !d || d.open !== false, arcadeOpen: !d || d.arcadeOpen !== false, versusOpen: !d || d.versusOpen !== false, message: (d && d.message) || "" });
 
   const fb = {
     async init() {
@@ -426,6 +426,49 @@ window.MML = window.MML || {};
     return { username: s.username.toLowerCase(), name: s.displayName, grade: s.grade, avatar: MML.avatar.clean(p && p.avatar), seen: 0 };
   }
 
+  /* ---------- Live match data (Realtime Database), used by Versus ----------
+     A thin wrapper so versus.js works the same in demo mode. Paths look like "rooms/BKTZ/players". */
+  fb.live = {
+    async ready() {
+      const { dbm, rt: db } = await rt();
+      if (!F.offsetOn) {
+        F.offsetOn = true; F.offset = 0;
+        dbm.onValue(dbm.ref(db, ".info/serverTimeOffset"), (s) => (F.offset = s.val() || 0));
+      }
+    },
+    now: () => Date.now() + ((F && F.offset) || 0), // the database's clock, so every screen counts down together
+    async get(path) { const { dbm, rt: db } = await rt(); return (await dbm.get(dbm.ref(db, path))).val(); },
+    async watch(path, cb) { const { dbm, rt: db } = await rt(); return dbm.onValue(dbm.ref(db, path), (s) => cb(s.val()), (e) => cb(null, friendly(e))); },
+    async set(path, v) { const { dbm, rt: db } = await rt(); await dbm.set(dbm.ref(db, path), v); },
+    async update(path, obj) { const { dbm, rt: db } = await rt(); await dbm.update(dbm.ref(db, path), obj); },
+    async remove(path) { const { dbm, rt: db } = await rt(); await dbm.remove(dbm.ref(db, path)); },
+    async txn(path, fn) {
+      const { dbm, rt: db } = await rt();
+      const r = await dbm.runTransaction(dbm.ref(db, path), fn, { applyLocally: false });
+      return { committed: r.committed, value: r.snapshot.val() };
+    },
+    // What to do if this browser disconnects (closed tab, lost Wi-Fi): null removes the path
+    async onLeave(path, v) { const { dbm, rt: db } = await rt(); const od = dbm.onDisconnect(dbm.ref(db, path)); await (v === null ? od.remove() : od.set(v)); },
+    async cancelLeave(path) { const { dbm, rt: db } = await rt(); await dbm.onDisconnect(dbm.ref(db, path)).cancel(); },
+  };
+
+  /* ---------- Versus invites (Firestore): invites/{fromUid}_{toUid} ---------- */
+  fb.invites = {
+    async send(user, toUid, code) {
+      const { fsM, db } = F;
+      try {
+        await fsM.setDoc(fsM.doc(db, "invites", user.uid + "_" + toUid),
+          { from: user.uid, to: toUid, name: user.profile.displayName, code, at: fsM.serverTimestamp() });
+      } catch (e) { throw friendly(e); }
+    },
+    async watch(user, cb) {
+      const { fsM, db } = F;
+      return fsM.onSnapshot(fsM.query(fsM.collection(db, "invites"), fsM.where("to", "==", user.uid)),
+        (snap) => cb(snap.docs.map((d) => Object.assign({ id: d.id }, d.data(), { at: toMs(d.data().at) || Date.now() }))), () => cb([]));
+    },
+    async remove(id) { try { await F.fsM.deleteDoc(F.fsM.doc(F.db, "invites", id)); } catch (e) { } },
+  };
+
   function studentRow(uid, s, password, p) {
     const pr = PR.normalize(p);
     return {
@@ -746,6 +789,65 @@ window.MML = window.MML || {};
     demoNames() { const d = dload(), out = {}; for (const [uid, p] of Object.entries(d.people)) out[uid] = p.name; return out; },
   });
 
+  /* Demo live match data: one tree saved in this browser (so two tabs can even play each other) */
+  const LKEY = "mml-demo-live";
+  const lload = () => { try { return JSON.parse(localStorage.getItem(LKEY)) || {}; } catch (e) { return {}; } };
+  const lsave = (t) => { try { localStorage.setItem(LKEY, JSON.stringify(t)); } catch (e) { } };
+  const lparts = (p) => String(p).split("/").filter(Boolean);
+  const lat = (t, p) => lparts(p).reduce((o, k) => (o == null ? undefined : o[k]), t);
+  function lput(t, p, v) {
+    const ks = lparts(p); let o = t;
+    const trail = [];
+    for (const k of ks.slice(0, -1)) { if (typeof o[k] !== "object" || o[k] === null) o[k] = {}; trail.push([o, k]); o = o[k]; }
+    const last = ks[ks.length - 1];
+    if (v === null || v === undefined) delete o[last]; else o[last] = clone(v);
+    // like the real database, empty branches disappear
+    for (let i = trail.length - 1; i >= 0; i--) { const [par, k] = trail[i]; if (par[k] && !Object.keys(par[k]).length) delete par[k]; else break; }
+  }
+  demo.live = {
+    async ready() { },
+    now: () => Date.now(),
+    async get(p) { const v = lat(lload(), p); return v === undefined ? null : clone(v); },
+    async watch(p, cb) {
+      let last = "";
+      const tick = () => { const v = lat(lload(), p); const s = JSON.stringify(v === undefined ? null : v); if (s !== last) { last = s; cb(JSON.parse(s)); } };
+      tick();
+      const t = setInterval(tick, 150);
+      return () => clearInterval(t);
+    },
+    async set(p, v) { const t = lload(); lput(t, p, v); lsave(t); },
+    async update(p, obj) { const t = lload(); for (const [k, v] of Object.entries(obj)) lput(t, p + "/" + k, v); lsave(t); },
+    async remove(p) { const t = lload(); lput(t, p, null); lsave(t); },
+    async txn(p, fn) {
+      const t = lload(), cur = lat(t, p);
+      const nv = fn(cur === undefined ? null : clone(cur));
+      if (nv === undefined) return { committed: false, value: cur === undefined ? null : cur };
+      lput(t, p, nv); lsave(t);
+      return { committed: true, value: nv };
+    },
+    async onLeave() { },
+    async cancelLeave() { },
+  };
+  demo.invites = {
+    async send(user, toUid, code) {
+      const d = dload(); d.invites = d.invites || {};
+      d.invites[user.uid + "_" + toUid] = { from: user.uid, to: toUid, name: user.profile.displayName, code, at: Date.now() };
+      dsave(d);
+    },
+    async watch(user, cb) {
+      let last = "";
+      const tick = () => {
+        const all = dload().invites || {};
+        const mine = Object.entries(all).filter(([, v]) => v.to === user.uid).map(([id, v]) => Object.assign({ id }, v));
+        const s = JSON.stringify(mine); if (s !== last) { last = s; cb(mine); }
+      };
+      tick();
+      const t = setInterval(tick, 700);
+      return () => clearInterval(t);
+    },
+    async remove(id) { const d = dload(); if (d.invites) { delete d.invites[id]; dsave(d); } },
+  };
+
   /* =====================================================================
      Public interface
      ===================================================================== */
@@ -766,6 +868,8 @@ window.MML = window.MML || {};
     bosses: impl.bosses,
     friends: impl.friends,
     maxFriends: MAX_FRIENDS,
+    live: impl.live,
+    invites: impl.invites,
     people: {
       // Adds or updates this student's entry in the name list (name, grade, ship). Skips the write if nothing changed.
       sync(user, avatar) { if (!user || user.isAdmin) return Promise.resolve(); return impl.people.sync(user, avatar).catch(() => { }); },
