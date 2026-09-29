@@ -57,6 +57,60 @@ service cloud.firestore {
           && d.xp is int && d.xp >= o.xp && d.xp <= o.xp + 500;
     }
 
+    // Friends name list: people/{uid} holds a student's username (lowercase), name, grade, ship, and
+    // when they were last on the site. Students can look up one username at a time, but can't list everyone.
+    match /people/{uid} {
+      allow get: if request.auth != null;
+      allow list: if isAdmin() || (request.auth != null && request.query.limit <= 1);
+      allow create: if isAdmin() || (isSelf(uid) && validPerson(uid));
+      allow update: if isAdmin() || (isSelf(uid) && (onlyCheckIn() || validPerson(uid)));
+      allow delete: if isAdmin();
+    }
+    // A student's entry has to match their real profile
+    function validPerson(uid) {
+      let s = student(uid);
+      let d = request.resource.data;
+      return d.keys().hasOnly(['username', 'name', 'grade', 'avatar', 'seen'])
+          && d.username == s.username.lower() && d.name == s.displayName && d.grade == s.grade
+          && d.avatar is map && d.avatar.size() <= 8
+          && d.seen == request.time;
+    }
+    // The "I'm online" check-in only changes the time
+    function onlyCheckIn() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seen'])
+          && request.resource.data.seen == request.time;
+    }
+
+    // Friendships: friends/{uidA_uidB} (the two ids in alphabetical order).
+    // Only the two students (and the admin) can see one. A student can send a request as themselves,
+    // only the other student can accept or decline it, and either friend can remove an accepted friendship.
+    match /friends/{id} {
+      allow get: if isAdmin() || (request.auth != null && request.auth.uid in id.split('_'));
+      allow list: if isAdmin() || (request.auth != null && request.auth.uid in resource.data.users);
+      allow create: if isAdmin() || (request.auth != null && validNewFriend(id));
+      allow update: if isAdmin() || (request.auth != null && validAnswer());
+      allow delete: if isAdmin() || (request.auth != null && request.auth.uid in resource.data.users
+                                     && resource.data.status == 'accepted');
+    }
+    function validNewFriend(id) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['users', 'from', 'to', 'status', 'at'])
+          && d.from == request.auth.uid && d.status == 'pending' && d.at == request.time
+          && d.to is string && d.to != d.from
+          && id == (d.from < d.to ? d.from + '_' + d.to : d.to + '_' + d.from)
+          && d.users == id.split('_')
+          && exists(/databases/$(database)/documents/students/$(d.from))
+          && exists(/databases/$(database)/documents/students/$(d.to));
+    }
+    function validAnswer() {
+      let d = request.resource.data;
+      return resource.data.to == request.auth.uid
+          && resource.data.status != 'accepted'
+          && d.diff(resource.data).affectedKeys().hasOnly(['status', 'at'])
+          && d.status in ['accepted', 'declined']
+          && d.at == request.time;
+    }
+
     // Weekly leaderboards: weeks/{week}/{g6|g7|g8|school}/{uid}
     match /weeks/{week}/{board}/{uid} {
       allow read: if request.auth != null;

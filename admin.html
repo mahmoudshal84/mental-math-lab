@@ -111,6 +111,23 @@
       </div>
     </section>
 
+    <section class="panel" id="friendsPanel">
+      <h2>Friends</h2>
+      <p class="note">Students add each other by username, and a request has to be accepted before they're friends. There's no chat.
+        Remove any friendship here. Removing one doesn't notify either student, and they can send a new request later.</p>
+      <div class="toolbar" style="margin:10px 0">
+        <input id="fSearch" type="search" placeholder="Search names" aria-label="Search friendships">
+        <span class="note" id="fCount"></span>
+      </div>
+      <div class="tablewrap" style="box-shadow:none;border:2px solid #dde0f5">
+        <table class="students friend-table">
+          <thead><tr><th>Student</th><th>Student</th><th>Status</th><th>Since</th><th></th></tr></thead>
+          <tbody id="fRows"><tr><td colspan="5">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <p class="error" id="fErr" role="alert"></p>
+    </section>
+
     <section class="panel" id="bossPanel">
       <h2>Class boss battle</h2>
       <div id="bossSetup">
