@@ -18,6 +18,8 @@ window.MML = window.MML || {};
       avatar: MML.avatar.defaults(), owned: MML.avatar.freeIds(),
       settings: { sound: false, topic: "facts", level: 1 }, lastActive: null,
       bosses: [], // boss battles this student took part in: { id, topic, level, won, dmg, at }
+      // Versus record. A match counts as played when it starts, so leaving early counts as a loss.
+      versus: { race: { played: 0, wins: 0 }, blast: { played: 0, wins: 0 }, lastStart: "", lastWin: "" },
     };
   }
   function normalize(d) {
@@ -36,6 +38,8 @@ window.MML = window.MML || {};
       if ("arcade" in w || "school" in w) { w.arc.lane = { g: w.arcade || 0, s: w.school || 0 }; delete w.arcade; delete w.school; }
     }
     p.bosses = Array.isArray(d.bosses) ? d.bosses.slice(-60) : [];
+    const v = d.versus || {};
+    p.versus = { race: Object.assign({ played: 0, wins: 0 }, v.race), blast: Object.assign({ played: 0, wins: 0 }, v.blast), lastStart: v.lastStart || "", lastWin: v.lastWin || "" };
     p.avatar = MML.avatar.clean(d.avatar);
     p.owned = Array.from(new Set([...(d.owned || []), ...MML.avatar.freeIds()]));
     return p;
@@ -158,7 +162,15 @@ window.MML = window.MML || {};
     return out;
   }
 
+  /* Versus record: "won 3, lost 2" text for one mode, or both together */
+  function versusText(p, mode) {
+    const r = mode ? p.versus[mode] : { played: p.versus.race.played + p.versus.blast.played, wins: p.versus.race.wins + p.versus.blast.wins };
+    const w = r.wins, l = Math.max(0, r.played - r.wins);
+    return `${w} win${w === 1 ? "" : "s"}, ${l} loss${l === 1 ? "" : "es"}`;
+  }
+
   MML.progress = {
+    versusText,
     STAR_MIN, FREE_MISSES, IMPROVE_MIN, fresh, normalize, weekId, prevWeekId, week, improvement,
     starKey, starsFor, starMin, unlocked, totalStars, nextProblem, record, finishLevel, finishArcade, weekArcade, boardEntries, starXp,
   };

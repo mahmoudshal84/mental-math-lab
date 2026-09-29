@@ -74,6 +74,10 @@
     renderTrophies();
     showFriendRequests();
     $("coins").textContent = prog.coins;
+    const vr = prog.versus;
+    $("vsRecord").innerHTML = vr.race.played + vr.blast.played
+      ? `Your record: <b>Race to 5</b> ${PR.versusText(prog, "race")}. <b>Blast Battle</b> ${PR.versusText(prog, "blast")}.`
+      : "Your record: no matches yet.";
     $("starCount").textContent = PR.totalStars(prog);
     $("xp").textContent = prog.xp;
     $("logout").onclick = async () => { await B.logout(); location.href = "index.html"; };

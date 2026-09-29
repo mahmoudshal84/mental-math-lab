@@ -1,15 +1,21 @@
-/* Mental Math Lab: Versus (Race to 5)
+/* Mental Math Lab: Versus (Race to 5 and Blast Battle)
+   BLAST BATTLE: 2 to 4 players, everyone for themselves. The same 20 problems fall on every
+   screen at the same moments (built from a shared seed and start time). The first player to type
+   an answer and press Enter blasts that problem and gets the point. Most points wins.
+
+   RACE TO 5:
    Two teams of 1 to 3 players race to clear the same board of problems: 5 per player.
    Typed answers clear whichever problem they match, and anyone on a team can clear any
    problem on that team's board. First team to clear its board wins the round; first to
    win 2 rounds wins the match. Coins: 1 per problem you clear. No XP, stars, or leaderboards.
 
    Match data lives in the Realtime Database at rooms/{CODE}:
-     host, topic, level, created, state ("lobby" or "playing")
+     host, mode ("race" or "blast"), topic, level, created, state ("lobby" or "playing")
      players/{uid}: name, avatar, team ("a" or "b"), on (connected), joined
      game: round, seed, start (when the round starts), size (players per team),
            wins {a, b}, result {r1: "a", ...}, winner, forfeit
-     boards/r{round}/{team}/t{index}: uid of the player who cleared that problem */
+     boards/r{round}/{team}/t{index}: uid of the player who cleared that problem (Race to 5)
+     blasts/b{index}: uid of the player who blasted that problem (Blast Battle; game has id, seed, start, n, over) */
 (async function () {
   const B = MML.backend, P = MML.problems, PR = MML.progress, AV = MML.avatar, L = B.live;
   const $ = (id) => document.getElementById(id);
@@ -18,6 +24,11 @@
   const CODE_LETTERS = "BCDFGHJKLMNPQRSTVWXZ"; // no vowels, so codes never spell words
   const TEAM_NAME = { a: "Mint team", b: "Pink team" };
   const other = (t) => (t === "a" ? "b" : "a");
+  const BLAST_N = 20, BLAST_MAX = 4, SPAWN_MS = 2600;
+  const COLORS = ["#2ee6a6", "#ff4f8b", "#ffd23f", "#3dd6ff"]; // Blast Battle player colors, in join order
+  const MODE_NAME = { race: "Race to 5", blast: "Blast Battle" };
+  const modeOf = (r) => (r && r.mode === "blast" ? "blast" : "race");
+  const maxPlayers = (r) => (modeOf(r) === "blast" ? BLAST_MAX : MAX_TEAM * 2);
 
   let code = null, room = null, unwatch = null, mode = null;
   let timers = [];
@@ -25,6 +36,7 @@
   let board = { seed: null, list: [] }, pending = new Set(), frozenUntil = 0;
   let unbanked = 0, matchClears = 0, matchCoins = 0, lastRound = 0, endShown = false;
   let offSince = { a: 0, b: 0 }, botNext = {};
+  let blast = { seed: null, list: [], els: [], seen: {}, ended: false, raf: 0 }, blastPending = new Set();
 
   const user = await B.requireStudent();
   let prog;
@@ -45,9 +57,11 @@
     $("menuView").hidden = name !== "menu";
     $("lobbyView").hidden = name !== "lobby";
     $("gameView").hidden = name !== "game";
-    $("wrap").hidden = name === "game";
-    document.body.classList.toggle("in-race", name === "game");
-    MML.versusBusy = name === "game"; // hides invite pop-ups mid-race
+    $("blastView").hidden = name !== "blast";
+    const playing = name === "game" || name === "blast";
+    $("wrap").hidden = playing;
+    document.body.classList.toggle("in-race", playing);
+    MML.versusBusy = playing; // hides invite pop-ups mid-match
   }
   const players = () => Object.entries((room && room.players) || {}).map(([uid, p]) => Object.assign({ uid }, p)).sort((a, b) => (a.joined || 0) - (b.joined || 0));
   const team = (t) => players().filter((p) => p.team === t);
@@ -104,17 +118,27 @@
     fillTopic($("mTopic"), P.strands[lastTopic] ? lastTopic : "facts");
     fillLevel($("mLevel"), $("mTopic").value, PR.unlocked(prog, $("mTopic").value));
     $("mTopic").onchange = () => fillLevel($("mLevel"), $("mTopic").value, PR.unlocked(prog, $("mTopic").value));
+    const lastMode = localStorage.getItem("mml-vs-mode") === "blast" ? "blast" : "race";
+    document.querySelector(`input[name=mode][value=${lastMode}]`).checked = true;
+    showRecord();
+  }
+  function showRecord() {
+    const v = prog.versus;
+    $("myRecord").innerHTML = v.race.played + v.blast.played
+      ? `Your record: <b>Race to 5</b> ${PR.versusText(prog, "race")}. <b>Blast Battle</b> ${PR.versusText(prog, "blast")}.`
+      : "Your record: no matches yet. Wins and losses show up here.";
   }
   $("createBtn").onclick = async () => {
     const btn = $("createBtn"); btn.disabled = true; $("createErr").textContent = "";
     const topic = $("mTopic").value, level = +$("mLevel").value;
-    try { localStorage.setItem("mml-vs-topic", topic); } catch (e) { }
+    const gameMode = document.querySelector("input[name=mode]:checked").value === "blast" ? "blast" : "race";
+    try { localStorage.setItem("mml-vs-topic", topic); localStorage.setItem("mml-vs-mode", gameMode); } catch (e) { }
     let lastErr = null;
     for (let i = 0; i < 6; i++) {
       const c = Array.from({ length: 4 }, () => CODE_LETTERS[Math.floor(Math.random() * CODE_LETTERS.length)]).join("");
       try {
         if (await L.get("rooms/" + c)) continue; // that code is taken
-        await L.set("rooms/" + c, { host: user.uid, topic, level, created: L.now(), state: "lobby", players: { [user.uid]: meEntry("a") } });
+        await L.set("rooms/" + c, { host: user.uid, mode: gameMode, topic, level, created: L.now(), state: "lobby", players: { [user.uid]: meEntry("a") } });
         btn.disabled = false;
         return enter(c);
       } catch (e) { lastErr = e; }
@@ -135,7 +159,7 @@
       if (r.players[user.uid]) return enter(c); // coming back (for example, after a refresh)
       if (r.state !== "lobby") return err("That match has already started. Ask them to start a new one.");
       const ps = Object.values(r.players);
-      if (ps.length >= MAX_TEAM * 2) return err("That match is full.");
+      if (ps.length >= maxPlayers(r)) return err("That match is full.");
       const na = ps.filter((p) => p.team === "a").length, nb = ps.length - na;
       await L.set(`rooms/${c}/players/${user.uid}`, meEntry(na <= nb ? "a" : "b"));
       return enter(c);
@@ -164,6 +188,7 @@
     if (unwatch) { try { unwatch(); } catch (e) { } }
     unwatch = null; code = null; room = null; mode = null; MML.versusRoom = "";
     timers.forEach(clearInterval); timers = [];
+    cancelAnimationFrame(blast.raf);
     $("raceOverlay").hidden = true;
   }
 
@@ -185,16 +210,36 @@
     if (r.state === "lobby") {
       if (mode !== "lobby") { mode = "lobby"; resetMatch(); timers.forEach(clearInterval); timers = []; setLeaveHandler(); openLobby(); }
       renderLobby();
+    } else if (modeOf(r) === "blast") {
+      if (mode !== "blast") { mode = "blast"; setLeaveHandler(); openBlast(); }
+      renderBlast();
     } else {
       if (mode !== "game") { mode = "game"; setLeaveHandler(); openGame(); }
       renderGame();
     }
+    if (r.state === "playing" && r.game && r.game.id) countPlayed(modeOf(r), r.game.id);
+  }
+
+  /* ---------- Win/loss record (saved in progress) ---------- */
+  function countPlayed(m, id) {
+    if (prog.versus.lastStart === id) return;
+    prog.versus.lastStart = id; prog.versus[m].played++;
+    B.saveProgress(user, prog).catch(() => { });
+  }
+  function countWin(m, id) {
+    if (!id || prog.versus.lastWin === id) return;
+    prog.versus.lastWin = id; prog.versus[m].wins++;
+    B.saveProgress(user, prog).catch(() => { });
   }
 
   function resetMatch() {
     bank();
     board = { seed: null, list: [] }; pending.clear(); frozenUntil = 0;
     matchClears = 0; matchCoins = 0; lastRound = 0; endShown = false; offSince = { a: 0, b: 0 }; botNext = {};
+    cancelAnimationFrame(blast.raf);
+    blast.els.forEach((e) => e.remove());
+    blast = { seed: null, list: [], els: [], seen: {}, ended: false, raf: 0 }; blastPending.clear();
+    $("raceOverlay").hidden = true;
   }
 
   /* ---------- Lobby ---------- */
@@ -216,6 +261,12 @@
   }
   function renderLobby() {
     $("roomCode").textContent = code;
+    const isBlast = modeOf(room) === "blast";
+    $("lobbyMode").textContent = MODE_NAME[modeOf(room)];
+    $("lobbyNote").textContent = isBlast ? "Share the code, or invite friends. 2 to 4 players, everyone for themselves."
+      : "Share the code, or invite friends. Teams need the same number of players, from 1 to 3 each.";
+    $("teamsBox").hidden = isBlast; $("ffaBox").hidden = !isBlast;
+    if (isBlast) return renderBlastLobby();
     const A = team("a"), Bt = team("b"), isHost = room.host === user.uid;
     for (const [t, box] of [["a", "teamA"], ["b", "teamB"]]) {
       const ul = $(box); ul.innerHTML = "";
@@ -225,17 +276,9 @@
     }
     const mine = myTeam(), otherCount = team(other(mine)).length;
     $("switchBtn").hidden = otherCount >= MAX_TEAM;
+    renderSetup(isHost);
     $("switchBtn").textContent = `Switch to ${TEAM_NAME[other(mine)]}`;
     $("botBtn").disabled = players().length >= MAX_TEAM * 2;
-
-    // Topic and level: the host picks from levels they've unlocked
-    $("hostSetup").hidden = !isHost; $("guestSetup").hidden = isHost;
-    if (isHost) {
-      if (document.activeElement !== $("lTopic") && document.activeElement !== $("lLevel")) {
-        fillTopic($("lTopic"), room.topic);
-        fillLevel($("lLevel"), room.topic, Math.min(room.level, PR.unlocked(prog, room.topic)));
-      }
-    } else $("guestSetup").innerHTML = `<b>${P.strands[room.topic].name}</b>, level ${room.level}: ${levelName(room.topic, room.level)}`;
 
     const allHere = players().every((p) => p.on !== false);
     const ready = A.length >= 1 && A.length === Bt.length && allHere;
@@ -247,6 +290,32 @@
       : !allHere ? "Waiting for everyone to reconnect…"
       : isHost ? "Ready when you are!" : "Waiting for the host to start…";
   }
+  // Topic and level: the host picks from levels they've unlocked
+  function renderSetup(isHost) {
+    $("hostSetup").hidden = !isHost; $("guestSetup").hidden = isHost;
+    if (isHost) {
+      if (document.activeElement !== $("lTopic") && document.activeElement !== $("lLevel")) {
+        fillTopic($("lTopic"), room.topic);
+        fillLevel($("lLevel"), room.topic, Math.min(room.level, PR.unlocked(prog, room.topic)));
+      }
+    } else $("guestSetup").innerHTML = `<b>${P.strands[room.topic].name}</b>, level ${room.level}: ${levelName(room.topic, room.level)}`;
+  }
+  const colorOf = (uid) => COLORS[Math.max(0, players().findIndex((p) => p.uid === uid)) % COLORS.length];
+  function renderBlastLobby() {
+    const isHost = room.host === user.uid, ps = players();
+    const ul = $("ffaList"); ul.innerHTML = "";
+    ps.forEach((p) => { const li = playerRow(p); li.style.setProperty("--pc", colorOf(p.uid)); ul.appendChild(li); });
+    for (let i = ps.length; i < BLAST_MAX; i++) { const li = document.createElement("li"); li.className = "open"; li.textContent = "Open spot"; ul.appendChild(li); }
+    $("switchBtn").hidden = true;
+    $("botBtn").disabled = ps.length >= BLAST_MAX;
+    renderSetup(isHost);
+    const allHere = ps.every((p) => p.on !== false), ready = ps.length >= 2 && allHere;
+    $("startBtn").hidden = !isHost;
+    $("startBtn").disabled = !ready;
+    $("startBtn").textContent = ready ? `Start with ${ps.length} players` : "Start match";
+    $("startHint").textContent = ps.length < 2 ? "Waiting for at least one more player…" : !allHere ? "Waiting for everyone to reconnect…"
+      : isHost ? "Ready when you are!" : "Waiting for the host to start…";
+  }
   $("lTopic").onchange = () => {
     const t = $("lTopic").value;
     L.update("rooms/" + code, { topic: t, level: PR.unlocked(prog, t) }).catch((e) => toast(e.message));
@@ -255,15 +324,20 @@
   $("switchBtn").onclick = () => L.update(`rooms/${code}/players/${user.uid}`, { team: other(myTeam()) }).catch((e) => toast(e.message));
   $("leaveBtn").onclick = () => leave();
   $("raceLeave").onclick = () => {
-    if (room && room.game && !room.game.winner && !confirm("Leave the match? If your whole team leaves, the other team wins.")) return;
+    if (room && room.game && !room.game.winner && !confirm("Leave the match? It counts as a loss on your record, and if your whole team leaves, the other team wins.")) return;
     leave();
   };
   $("startBtn").onclick = async () => {
     $("startBtn").disabled = true;
+    const id = code + "-" + Date.now().toString(36); // one id per match, for the win/loss record
     try {
-      await L.update("rooms/" + code, {
+      if (modeOf(room) === "blast") await L.update("rooms/" + code, {
+        state: "playing", blasts: null,
+        game: { id, seed: newSeed(), start: L.now() + COUNTDOWN_MS + 600, n: BLAST_N },
+      });
+      else await L.update("rooms/" + code, {
         state: "playing", boards: null,
-        game: { round: 1, seed: newSeed(), start: L.now() + COUNTDOWN_MS + 600, size: team("a").length, wins: { a: 0, b: 0 } },
+        game: { id, round: 1, seed: newSeed(), start: L.now() + COUNTDOWN_MS + 600, size: team("a").length, wins: { a: 0, b: 0 } },
       });
     } catch (e) { toast(e.message); $("startBtn").disabled = false; }
   };
@@ -274,7 +348,7 @@
     const ps = players(), na = team("a").length, nb = team("b").length;
     const name = BOT_NAMES.find((n) => !ps.some((p) => p.name === n)) || "Pal";
     const pick = (cat) => AV.catalog[cat].items[Math.floor(Math.random() * AV.catalog[cat].items.length)].id;
-    L.set(`rooms/${code}/players/bot${Date.now()}`, { name, bot: true, team: nb < na ? "b" : na < nb ? "a" : "b", on: true, joined: L.now(),
+    L.set(`rooms/${code}/players/bot${Date.now()}`, { name, bot: true, team: modeOf(room) === "blast" ? "a" : nb < na ? "b" : na < nb ? "a" : "b", on: true, joined: L.now(),
       avatar: AV.clean({ shape: pick("shape"), color: pick("color"), decal: pick("decal") }) });
   };
 
@@ -463,11 +537,13 @@
   function showEnd() {
     const g = room.game, mt = myTeam(), won = g.winner === mt, w = g.wins || {};
     bank();
+    if (won) countWin("race", g.id);
     const card = $("raceCard");
     card.className = "race-card end " + (won ? "win" : "lose");
     const why = g.forfeit ? (g.forfeit === mt ? "Your team left the match." : "The other team left the match.") : `${w[mt] || 0} to ${w[other(mt)] || 0}`;
     card.innerHTML = `<h2>${won ? "Your team wins! 🏆" : "The other team wins"}</h2><p class="why"></p>
       <p>You cleared <b>${matchClears}</b> problem${matchClears === 1 ? "" : "s"} and earned <b>${matchClears}</b> coin${matchClears === 1 ? "" : "s"}.</p>
+      <p class="note">Race to 5 record: ${PR.versusText(prog, "race")}</p>
       <div class="actions" id="endActs"></div><p class="note" id="endNote"></p>`;
     card.querySelector(".why").textContent = why;
     $("raceOverlay").hidden = false;
@@ -482,7 +558,7 @@
       const again = document.createElement("button"); again.type = "button"; again.className = "btn btn-primary"; again.textContent = "Back to the lobby";
       again.onclick = async () => {
         again.disabled = true;
-        const up = { state: "lobby", game: null, boards: null };
+        const up = { state: "lobby", game: null, boards: null, blasts: null };
         for (const p of players()) if (p.on === false && !p.bot) up["players/" + p.uid] = null; // players who left are cleared out
         try { await L.update("rooms/" + code, up); } catch (e) { toast(e.message); again.disabled = false; }
       };
@@ -502,7 +578,7 @@
       const path = `rooms/${c}/players/${user.uid}`;
       try {
         await L.cancelLeave(path);
-        if (r.state === "lobby" || (r.game && r.game.winner)) {
+        if (r.state === "lobby" || (r.game && (r.game.winner || r.game.over))) {
           const others = Object.entries(r.players || {}).filter(([uid, p]) => uid !== user.uid && !p.bot && p.on !== false);
           if (!others.length) { try { await L.remove("rooms/" + c); } catch (e) { await L.remove(path); } } // last one out closes the room
           else {
@@ -513,6 +589,253 @@
       } catch (e) { }
     }
     if (!quiet) showMenu();
+  }
+
+  /* ---------- Blast Battle ---------- */
+  const nameOf = (uid) => (room && room.players && room.players[uid] ? room.players[uid].name : "Someone");
+  // Every screen builds the same falling schedule from the seed and start time
+  function blastBoardFor(g) {
+    if (blast.seed === g.seed) return blast.list;
+    const qs = makeBoard(g.seed, room.topic, room.level, g.n || BLAST_N);
+    const rnd = seeded((g.seed ^ 0x5bd1e995) >>> 0);
+    let lastLane = -1;
+    const list = qs.map((q, i) => {
+      let lane; do { lane = Math.floor(rnd() * 4); } while (lane === lastLane);
+      lastLane = lane;
+      const fall = Math.min(15000, 9000 + Math.max(0, q.prompt.length - 12) * 140); // word problems fall slower
+      const spawn = g.start + i * SPAWN_MS;
+      return { prompt: q.prompt, answer: q.answer, lane, spawn, land: spawn + fall };
+    });
+    blast.els.forEach((e) => e.remove());
+    const field = $("blastField");
+    const els = list.map((q) => {
+      const d = document.createElement("div");
+      d.className = "rock" + (q.prompt.length > 24 ? " long" : ""); d.hidden = true;
+      const pr = document.createElement("span"); pr.textContent = q.prompt;
+      const who = document.createElement("small");
+      d.append(pr, who); field.appendChild(d);
+      return d;
+    });
+    const seen = {};
+    for (const k of Object.keys(room.blasts || {})) seen[k] = { uid: room.blasts[k], at: -1e9 }; // already blasted before we got here
+    Object.assign(blast, { seed: g.seed, list, els, seen, ended: false });
+    return list;
+  }
+  function openBlast() {
+    view("blast");
+    timers.forEach(clearInterval);
+    timers = [setInterval(blastTick, 200)];
+    $("blastIn").value = ""; $("blastMsg").textContent = "";
+    cancelAnimationFrame(blast.raf);
+    const loop = () => { blastFrame(); blast.raf = requestAnimationFrame(loop); };
+    blast.raf = requestAnimationFrame(loop);
+    setTimeout(() => $("blastIn").focus(), 50);
+  }
+  function blastScores() {
+    const count = {};
+    for (const uid of Object.values(room.blasts || {})) if (uid) count[uid] = (count[uid] || 0) + 1;
+    return players().map((p) => ({ uid: p.uid, name: p.name, on: p.on !== false, score: count[p.uid] || 0, color: colorOf(p.uid) }))
+      .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+  }
+  function renderBlast() {
+    const g = room.game;
+    if (!g) return;
+    blastBoardFor(g);
+    for (const [k, uid] of Object.entries(room.blasts || {})) {
+      if (!uid) continue;
+      if (!blast.seen[k]) { blast.seen[k] = { uid, at: performance.now() }; laser(uid, +k.slice(1)); }
+      else blast.seen[k].uid = uid; // someone else won a close one
+    }
+    // Scores along the top, ships along the bottom
+    const box = $("blastScores"); box.innerHTML = "";
+    for (const s of blastScores()) {
+      const c = document.createElement("span");
+      c.className = "chip" + (s.uid === user.uid ? " me" : "") + (s.on ? "" : " away");
+      c.style.setProperty("--pc", s.color);
+      c.innerHTML = "<span class='nm'></span><b></b>";
+      c.querySelector(".nm").textContent = s.uid === user.uid ? "You" : s.name;
+      c.querySelector("b").textContent = s.score;
+      box.appendChild(c);
+    }
+    const ground = $("blastGround"), ps = players();
+    if (ground.dataset.who !== ps.map((p) => p.uid + p.on).join()) {
+      ground.dataset.who = ps.map((p) => p.uid + p.on).join();
+      ground.innerHTML = "";
+      for (const p of ps) {
+        const d = document.createElement("div"); d.className = "gship" + (p.on === false ? " away" : "");
+        d.style.setProperty("--pc", colorOf(p.uid));
+        d.appendChild(AV.miniCanvas(p.avatar || AV.defaults(), 46, { flame: 10 }));
+        const n = document.createElement("span"); n.textContent = p.uid === user.uid ? "You" : p.name;
+        d.appendChild(n); ground.appendChild(d);
+      }
+    }
+    blastTick();
+  }
+  // Where each rock is right now (every frame, from the shared clock)
+  function rockPos(q, now, field) {
+    const W = field.clientWidth, H = field.clientHeight, laneW = W / 4;
+    const t = Math.min(1, Math.max(0, (now - q.spawn) / (q.land - q.spawn)));
+    return { x: q.lane * laneW + 8, y: -10 + t * (H - 96 - 70), w: laneW - 16 };
+  }
+  function blastFrame() {
+    if (!room || !room.game || mode !== "blast" || !blast.list.length) return;
+    const now = L.now(), field = $("blastField"), blasts = room.blasts || {}, pnow = performance.now();
+    blast.list.forEach((q, i) => {
+      const el = blast.els[i], k = "b" + i, seen = blast.seen[k];
+      const by = blasts[k] || (seen && seen.uid) || null;
+      if (now < q.spawn) { el.hidden = true; return; }
+      if (by) {
+        const age = pnow - (seen ? seen.at : -1e9);
+        if (age > 800) { el.hidden = true; return; }
+        if (!el.classList.contains("boom")) {
+          const p = rockPos(q, now, field);
+          el.style.transform = `translate(${p.x}px, ${p.y}px)`;
+          el.classList.add("boom");
+        }
+        el.style.setProperty("--pc", colorOf(by));
+        el.querySelector("small").textContent = "+1 " + (by === user.uid ? "You" : nameOf(by));
+        el.hidden = false;
+        return;
+      }
+      if (now >= q.land) {
+        if (now - q.land > 800) { el.hidden = true; return; }
+        el.classList.add("landed");
+      }
+      el.classList.remove("boom");
+      const p = rockPos(q, now, field);
+      el.style.width = p.w + "px";
+      el.style.transform = `translate(${p.x}px, ${p.y}px)`;
+      el.hidden = false;
+    });
+  }
+  function laser(uid, i) {
+    const field = $("blastField"), q = blast.list[i];
+    if (!q || mode !== "blast") return;
+    const ps = players(), slot = Math.max(0, ps.findIndex((p) => p.uid === uid));
+    const W = field.clientWidth, H = field.clientHeight, p = rockPos(q, L.now(), field);
+    const svg = $("lasers"), ln = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    ln.setAttribute("x1", ((slot + 0.5) / ps.length) * W); ln.setAttribute("y1", H - 60);
+    ln.setAttribute("x2", p.x + p.w / 2); ln.setAttribute("y2", p.y + 30);
+    ln.setAttribute("stroke", colorOf(uid)); ln.setAttribute("stroke-width", "5"); ln.setAttribute("stroke-linecap", "round");
+    svg.appendChild(ln);
+    setTimeout(() => ln.remove(), 280);
+  }
+  function blastTick() {
+    if (!room || !room.game || mode !== "blast" || !blast.list.length) return;
+    const g = room.game, now = L.now(), input = $("blastIn"), ov = $("raceOverlay"), card = $("raceCard");
+    const blasts = room.blasts || {}, list = blast.list;
+    const resolved = list.filter((q, i) => blasts["b" + i] || now >= q.land).length;
+    const frozen = Date.now() < frozenUntil;
+    $("blastLeft").textContent = now < g.start ? "Blast Battle" : `${list.length - resolved} left`;
+
+    if (!blast.ended && (g.over || (now >= g.start && resolved >= list.length))) {
+      blast.ended = true;
+      if (!g.over) L.update(`rooms/${code}/game`, { over: true }).catch(() => { });
+    }
+    if (blast.ended) {
+      input.disabled = true;
+      if (!endShown) { endShown = true; setTimeout(showBlastEnd, 900); } // let the last rock finish
+      else refreshEndButtons();
+      return;
+    }
+    if (now < g.start) {
+      input.disabled = true; ov.hidden = false;
+      card.className = "race-card count";
+      card.innerHTML = `<p>Blast Battle</p><strong>${Math.min(3, Math.ceil((g.start - now) / 1000))}</strong>`;
+    } else {
+      ov.hidden = true;
+      if (input.disabled && !frozen) { input.disabled = false; input.focus(); $("blastMsg").textContent = ""; }
+      else if (frozen) input.disabled = true;
+    }
+    $("blastForm").classList.toggle("frozen", frozen);
+    if (B.demo) botBlast(now);
+  }
+  $("blastForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const input = $("blastIn"), val = input.value.trim(), msg = $("blastMsg");
+    const g = room && room.game, now = L.now();
+    if (!val || !g || blast.ended || now < g.start || Date.now() < frozenUntil) return;
+    input.value = "";
+    const blasts = room.blasts || {}, list = blast.list;
+    const gone = (i) => blasts["b" + i] || blastPending.has(i);
+    // Aim for the lowest matching problem on the screen
+    const idx = list.map((q, i) => i)
+      .filter((i) => !gone(i) && now >= list[i].spawn && now < list[i].land)
+      .sort((a, b) => list[a].land - list[b].land)
+      .find((i) => P.matches(val, list[i].answer));
+    if (idx === undefined) {
+      const late = list.findIndex((q, i) => gone(i) && now < q.land + 3000 && P.matches(val, q.answer));
+      if (late >= 0) {
+        const by = blasts["b" + late];
+        msg.textContent = by && by !== user.uid ? `${nameOf(by)} blasted that one first!` : "Already blasted!"; msg.className = "race-msg";
+        return;
+      }
+      frozenUntil = Date.now() + FREEZE_MS;
+      msg.textContent = `"${val}" doesn't match anything. Wait a moment…`; msg.className = "race-msg bad";
+      input.disabled = true;
+      return;
+    }
+    msg.textContent = ""; msg.className = "race-msg";
+    blastPending.add(idx);
+    if (!blast.seen["b" + idx]) { blast.seen["b" + idx] = { uid: user.uid, at: performance.now() }; laser(user.uid, idx); }
+    let r = { committed: false, value: null };
+    try { r = await L.txn(`rooms/${code}/blasts/b${idx}`, (cur) => (cur ? undefined : user.uid)); } catch (err) { }
+    blastPending.delete(idx);
+    if (r.committed) { matchClears++; unbanked++; }
+    else {
+      msg.textContent = r.value && r.value !== user.uid ? `Too close! ${nameOf(r.value)} got it first.` : "That one got away.";
+      if (!r.value) delete blast.seen["b" + idx];
+      else blast.seen["b" + idx].uid = r.value;
+    }
+    if (room && mode === "blast") renderBlast();
+    input.focus();
+  };
+  $("blastLeave").onclick = () => {
+    if (!blast.ended && !confirm("Leave the match? It counts as a loss on your record.")) return;
+    leave();
+  };
+  function showBlastEnd() {
+    if (!room || mode !== "blast") return;
+    bank();
+    const scores = blastScores(), top = scores.length ? scores[0].score : 0;
+    const winners = scores.filter((s) => s.score === top && top > 0);
+    const mine = scores.find((s) => s.uid === user.uid) || { score: 0 };
+    const won = top > 0 && mine.score === top;
+    if (won) countWin("blast", room.game.id);
+    const title = won ? (winners.length > 1 ? "You tied for first! 🏆" : "You win! 🏆")
+      : !winners.length ? "Nobody blasted anything" : winners.length > 1 ? "It's a tie for first" : `${winners[0].name} wins!`;
+    const card = $("raceCard");
+    card.className = "race-card end " + (won ? "win" : "lose");
+    card.innerHTML = `<h2></h2><ol class="standings"></ol>
+      <p>You blasted <b>${matchClears}</b> problem${matchClears === 1 ? "" : "s"} and earned <b>${matchClears}</b> coin${matchClears === 1 ? "" : "s"}.</p>
+      <p class="note">Blast Battle record: ${PR.versusText(prog, "blast")}</p>
+      <div class="actions" id="endActs"></div><p class="note" id="endNote"></p>`;
+    card.querySelector("h2").textContent = title;
+    const ol = card.querySelector(".standings");
+    for (const s of scores) {
+      const li = document.createElement("li"); li.style.setProperty("--pc", s.color);
+      if (s.uid === user.uid) li.className = "me";
+      const place = document.createElement("i"); place.textContent = 1 + scores.filter((o) => o.score > s.score).length + "."; // ties share a place
+      li.appendChild(place);
+      const nm = document.createElement("span"); nm.textContent = s.uid === user.uid ? `${s.name} (you)` : s.name;
+      const b = document.createElement("b"); b.textContent = s.score;
+      li.append(nm, b); ol.appendChild(li);
+    }
+    $("raceOverlay").hidden = false;
+    refreshEndButtons();
+  }
+  function botBlast(now) {
+    if (room.host !== user.uid || now < room.game.start) return;
+    const blasts = room.blasts || {}, list = blast.list;
+    for (const p of players().filter((x) => x.bot)) {
+      if (!botNext[p.uid]) botNext[p.uid] = now + 2500 + Math.random() * 2500;
+      if (now < botNext[p.uid]) continue;
+      botNext[p.uid] = now + 2500 + Math.random() * 3500;
+      const live = list.map((q, i) => i).filter((i) => !blasts["b" + i] && !blastPending.has(i) && now >= list[i].spawn + 1500 && now < list[i].land);
+      if (!live.length) continue;
+      const i = live[Math.floor(Math.random() * live.length)];
+      L.txn(`rooms/${code}/blasts/b${i}`, (cur) => (cur ? undefined : p.uid));
+    }
   }
 
   // Demo only: pretend players clear a problem every few seconds
@@ -533,7 +856,8 @@
   }
 
   // Read-only peek for testing, like the games' debug() hooks
-  MML.versusDebug = () => ({ code, mode, board: board.list.map((q) => q.answer), room: room && JSON.parse(JSON.stringify(room)) });
+  MML.versusDebug = () => ({ code, mode, board: board.list.map((q) => q.answer), rocks: blast.list.map((q) => ({ answer: q.answer, spawn: q.spawn, land: q.land })),
+    now: L.now(), room: room && JSON.parse(JSON.stringify(room)) });
 
   // Start here: a room code in the address (from an invite or a refresh) joins that match
   const start = new URLSearchParams(location.search).get("room");

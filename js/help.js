@@ -58,16 +58,21 @@ MML.help = (function () {
         <p>A red number on the <b>Friends</b> button means someone sent you a request. You can accept it or say no thanks.
         You can have up to ${MML.backend.maxFriends} friends, and you can remove a friend at any time.</p>
         <p>Your teacher can see everyone's friends list.</p>`],
-      ["🏁", "Versus: Race to 5", `
-        <p>Race another team to clear a board of problems. Click <b>Play Versus</b> on the home page, then start a match or join one with a 4-letter room code.
+      ["🏁", "Versus", `
+        <p>Click <b>Play Versus</b> on the home page, pick a game, and start a match, or join one with a 4-letter room code.
         The player who starts a match can invite friends and picks the topic and level.</p>
+        <p><b>Blast Battle</b> is for 2 to 4 players, everyone for themselves. The same 20 problems fall on everyone's screen at the same time.
+        The first player to type the answer and press Enter blasts it and gets the point. Problems that hit the ground don't count for anyone. Most points wins.</p>
+        <p><b>Race to 5</b> is a team race:</p>
         <ul><li><b>Teams:</b> 1 vs 1, 2 vs 2, or 3 vs 3. Both teams need the same number of players.</li>
         <li><b>Same problems:</b> both teams get the same board, with 5 problems for each player on the team.</li>
         <li><b>Type and press Enter:</b> your answer clears whichever problem it matches. Anyone on your team can clear any problem.</li>
         <li><b>Don't guess:</b> an answer that isn't on your board freezes your typing for a moment.</li>
         <li><b>Best of 3:</b> the first team to clear its board wins the round, and the first team to win 2 rounds wins the match.</li></ul>
-        <p>You earn 1 coin for every problem you clear. Versus doesn't change your stars, XP, or leaderboard scores.
-        If your whole team leaves in the middle of a match, the other team wins.</p>`],
+        <p>In both games, an answer that doesn't match anything freezes your typing for a moment, so don't guess.
+        You earn 1 coin for every problem you clear or blast. Versus doesn't change your stars, XP, or leaderboard scores.</p>
+        <p>Your <b>record</b> (wins and losses) is on the home page. A match counts as soon as it starts, so leaving early counts as a loss.
+        In Blast Battle, a tie for first counts as a win for everyone tied.</p>`],
       ["👾", "Class Boss Battles", `
         <p>Your teacher starts a battle, and everyone who clicks <b>Join the battle</b> fights the same boss together.</p>
         <ul><li>A right answer deals 10 damage, or 20 to 30 on a streak.</li>

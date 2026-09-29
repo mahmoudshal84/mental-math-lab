@@ -198,19 +198,27 @@
         if (!list.length) { body.innerHTML = "<tr><td colspan='7'>No matches right now.</td></tr>"; $("vsErr").textContent = ""; return; }
         for (const [c, r] of list) {
           const ps = Object.values(r.players || {});
-          const names = (t) => ps.filter((p) => p.team === t).map((p) => p.name + (p.on === false ? " (left)" : "")).join(", ") || "—";
+          const blast = r.mode === "blast";
+          const nm = (p) => p.name + (p.on === false ? " (left)" : "");
+          const names = (t) => ps.filter((p) => p.team === t).map(nm).join(", ") || "nobody yet";
+          const who = blast ? ps.map(nm).join(", ") : `Mint: ${names("a")}. Pink: ${names("b")}.`;
           const g = r.game;
-          const status = r.state === "lobby" ? "In the lobby"
-            : g && g.winner ? `Finished: ${g.winner === "a" ? "Mint" : "Pink"} won ${(g.wins || {})[g.winner] || 0}–${(g.wins || {})[g.winner === "a" ? "b" : "a"] || 0}`
-            : `Playing round ${g ? g.round : 1}`;
+          let status = "In the lobby";
+          if (r.state === "playing" && blast) {
+            const n = {}; Object.values(r.blasts || {}).forEach((u) => (n[u] = (n[u] || 0) + 1));
+            const best = Object.entries(n).sort((a, b) => b[1] - a[1])[0];
+            status = (g && g.over ? "Finished" : "Playing") + (best && r.players[best[0]] ? `: ${r.players[best[0]].name} leads with ${best[1]}` : "");
+            if (g && g.over && best && r.players[best[0]]) status = `Finished: ${r.players[best[0]].name} won with ${best[1]}`;
+          } else if (r.state === "playing") {
+            status = g && g.winner ? `Finished: ${g.winner === "a" ? "Mint" : "Pink"} won ${(g.wins || {})[g.winner] || 0}–${(g.wins || {})[g.winner === "a" ? "b" : "a"] || 0}`
+              : `Playing round ${g ? g.round : 1}`;
+          }
           const tr = document.createElement("tr");
           const topic = P.strands[r.topic] ? `${P.strands[r.topic].name}, level ${r.level}` : "";
           const mins = Math.max(0, Math.round((now - (r.created || now)) / 60000));
           const when = mins < 1 ? "Just now" : mins < 60 ? `${mins} min ago` : ago(r.created);
-          [c, names("a"), names("b"), status, topic, when].forEach((v, i) => {
-            const td = document.createElement("td"); td.textContent = v;
-            if (i === 1) td.className = "mint"; if (i === 2) td.className = "pink";
-            tr.appendChild(td);
+          [c, blast ? "Blast Battle" : "Race to 5", who, status, topic, when].forEach((v) => {
+            const td = document.createElement("td"); td.textContent = v; tr.appendChild(td);
           });
           const td = document.createElement("td"), b = document.createElement("button");
           b.type = "button"; b.className = "mini danger"; b.textContent = "End";
