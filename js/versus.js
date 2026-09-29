@@ -19,6 +19,13 @@
   const TEAM_NAME = { a: "Mint team", b: "Pink team" };
   const other = (t) => (t === "a" ? "b" : "a");
 
+  let code = null, room = null, unwatch = null, mode = null;
+  let timers = [];
+  // This match
+  let board = { seed: null, list: [] }, pending = new Set(), frozenUntil = 0;
+  let unbanked = 0, matchClears = 0, matchCoins = 0, lastRound = 0, endShown = false;
+  let offSince = { a: 0, b: 0 }, botNext = {};
+
   const user = await B.requireStudent();
   let prog;
   try { prog = await B.loadProgress(user.uid); }
@@ -29,13 +36,6 @@
   try { await L.ready(); }
   catch (e) { $("loading").textContent = e.message; return; }
   $("loading").hidden = true;
-
-  let code = null, room = null, unwatch = null, mode = null;
-  let timers = [];
-  // This match
-  let board = { seed: null, list: [] }, pending = new Set(), frozenUntil = 0;
-  let unbanked = 0, matchClears = 0, matchCoins = 0, lastRound = 0, endShown = false;
-  let offSince = { a: 0, b: 0 }, botNext = {};
 
   function toast(msg) {
     const t = $("toast"); t.textContent = msg; t.hidden = false;

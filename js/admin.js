@@ -12,7 +12,7 @@
   try { user = await B.init(); } catch (e) { }
   if (!user) showLogin();
   else if (!user.isAdmin) show("studentView");
-  else start();
+  else setTimeout(start, 0); // wait until the rest of this file has loaded
 
   function showLogin() {
     show("loginView");
