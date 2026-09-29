@@ -15,7 +15,7 @@
     <header class="top" id="vsHeader">
       <div>
         <a class="wordmark" href="index.html" style="font-size:clamp(2rem,5vw,3rem)">Versus</a>
-        <p class="tagline">Race to 5: clear your team's board before the other team clears theirs.</p>
+        <p class="tagline">Challenge your classmates. Team up in Race to 5, or go head to head in Blast Battle.</p>
       </div>
       <div>
         <nav class="nav" aria-label="Main"><a href="index.html">Back to games</a><a href="friends.html">Friends</a></nav>
@@ -28,6 +28,12 @@
       <div class="vs-menu">
         <section class="panel">
           <h2>Start a match</h2>
+          <div class="mode-pick" role="radiogroup" aria-label="Game">
+            <label class="mode-opt"><input type="radio" name="mode" value="race" checked>
+              <span><b>Race to 5</b>Teams race to clear the same board. 1 vs 1 up to 3 vs 3.</span></label>
+            <label class="mode-opt"><input type="radio" name="mode" value="blast">
+              <span><b>Blast Battle</b>Everyone for themselves, 2 to 4 players. First to type the answer blasts the problem.</span></label>
+          </div>
           <p class="note">You'll get a room code to share, and you can invite friends.</p>
           <div class="row">
             <label class="field">Topic <select id="mTopic"></select></label>
@@ -46,11 +52,12 @@
           <button class="btn btn-primary" id="joinBtn" type="submit">Join</button>
         </form>
       </div>
+      <p class="vs-myrecord" id="myRecord"></p>
       <ul class="vs-how">
-        <li><b>Same problems.</b> Both teams get the same board: 5 problems for each player on the team.</li>
-        <li><b>Type and press Enter.</b> Your answer clears whichever problem it matches. Anyone on your team can clear any problem.</li>
-        <li><b>Don't guess.</b> An answer that isn't on your board freezes your typing for a moment.</li>
-        <li><b>Best of 3.</b> The first team to win 2 rounds wins the match. You earn a coin for every problem you clear.</li>
+        <li><b>Race to 5</b> Both teams get the same board, 5 problems per player. Type an answer and press Enter to clear the problem it matches. First team to clear its board wins the round. Best of 3.</li>
+        <li><b>Blast Battle</b> 20 problems fall for everyone at the same time. The first player to type the answer and press Enter blasts it and gets the point. Most points wins.</li>
+        <li><b>Don't guess</b> An answer that doesn't match anything freezes your typing for a moment.</li>
+        <li><b>Coins and your record</b> 1 coin for every problem you clear or blast. Wins and losses go on your record, and leaving a match early counts as a loss.</li>
       </ul>
     </main>
 
@@ -62,8 +69,12 @@
             <span>Room code</span>
             <strong id="roomCode">····</strong>
           </div>
-          <p class="note">Share the code, or invite friends. Teams need the same number of players, from 1 to 3 each.</p>
-          <div class="teams">
+          <p class="lobby-mode" id="lobbyMode"></p>
+          <p class="note" id="lobbyNote">Share the code, or invite friends. Teams need the same number of players, from 1 to 3 each.</p>
+          <div class="ffa" id="ffaBox" hidden>
+            <ul id="ffaList"></ul>
+          </div>
+          <div class="teams" id="teamsBox">
             <div class="team-col mint">
               <h3>Mint team</h3>
               <ul id="teamA"></ul>
@@ -126,9 +137,28 @@
       <button type="submit">Enter</button>
       <p class="race-msg" id="raceMsg" role="status"></p>
     </form>
-    <div class="race-overlay" id="raceOverlay" hidden>
-      <div class="race-card" id="raceCard"></div>
+  </div>
+
+  <!-- Blast Battle -->
+  <div class="race blast" id="blastView" hidden>
+    <div class="race-top blast-top">
+      <div class="race-round" id="blastLeft">Blast Battle</div>
+      <div class="blast-scores" id="blastScores" aria-live="polite"></div>
+      <button class="btn btn-ghost race-leave" id="blastLeave" type="button">Leave</button>
     </div>
+    <div class="blast-field" id="blastField">
+      <svg class="lasers" id="lasers" aria-hidden="true"></svg>
+      <div class="blast-ground" id="blastGround"></div>
+    </div>
+    <form class="race-input" id="blastForm">
+      <input id="blastIn" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Your answer" placeholder="Type an answer, press Enter">
+      <button type="submit">Blast</button>
+      <p class="race-msg" id="blastMsg" role="status"></p>
+    </form>
+  </div>
+
+  <div class="race-overlay" id="raceOverlay" hidden>
+    <div class="race-card" id="raceCard"></div>
   </div>
 
   <div class="toast" id="toast" hidden role="status"></div>
