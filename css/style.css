@@ -835,3 +835,4 @@ body.in-race { overflow-x: hidden; }
 .standings li.me { background: var(--sun); }
 .standings b { font-family: var(--display); font-weight: 400; font-size: 1.2rem; }
 @media (prefers-reduced-motion: reduce) { .rock.boom, .rock.landed { animation-duration: 0.01s; } }
+.mix-note { font-weight: 600; background: #eef0ff; border-radius: var(--radius-sm); padding: 8px 12px; margin: 10px 0; }
