@@ -22,6 +22,7 @@ window.MML = window.MML || {};
       { id: "lilac", name: "Lilac", price: 40, fill: "#b69cff" },
       { id: "lime", name: "Lime", price: 60, fill: "#b6f23a" },
       { id: "red", name: "Rocket red", price: 60, fill: "#ff3b3b" },
+      { id: "black", name: "Jet black", price: 100, fill: "#16171d", ink: "#f6f7ff" }, // light outline so it shows on dark ships
       { id: "chrome", name: "Chrome", price: 300, grad: ["#ffffff", "#9aa3c7", "#e9ecff", "#6c75a0"] },
       { id: "gold", name: "Gold", price: 500, grad: ["#fff3a6", "#e0a800", "#ffe066", "#b37a00"] }] },
     decal: { label: "Decoration", items: [
@@ -120,6 +121,7 @@ window.MML = window.MML || {};
     const av = clean(avIn);
     const time = o.time || 0, flame = o.flame == null ? 18 : o.flame;
     const fy = FLAME_Y[av.shape];
+    const ink = item("color", av.color).ink || INK; // outline and decoration color (light on dark ships)
     // flame
     if (flame > 0) {
       ctx.fillStyle = trailColor(av, time);
@@ -140,7 +142,7 @@ window.MML = window.MML || {};
     // decal clipped to the body
     ctx.save();
     ctx.beginPath(); PATHS[av.shape](ctx); ctx.clip();
-    ctx.fillStyle = INK; ctx.globalAlpha = 0.85;
+    ctx.fillStyle = ink; ctx.globalAlpha = 0.85;
     switch (av.decal) {
       case "stripe": ctx.fillRect(-4, -12, 8, 72); break;
       case "dots": [[-10, 42], [10, 42], [0, 20], [0, 38]].forEach(([x, y]) => { ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill(); }); break;
@@ -158,7 +160,7 @@ window.MML = window.MML || {};
     }
     ctx.restore();
     // outline
-    ctx.strokeStyle = INK; ctx.lineWidth = 3;
+    ctx.strokeStyle = ink; ctx.lineWidth = 3;
     ctx.beginPath(); PATHS[av.shape](ctx); ctx.stroke();
     // cockpit / dome / eyes
     if (av.shape === "saucer") {
@@ -174,7 +176,7 @@ window.MML = window.MML || {};
       }
     } else if (av.decal === "none" && av.shape !== "saucer") {
       // The center dot is the standard decoration, so any other decoration replaces it
-      ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(0, 28, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = ink; ctx.beginPath(); ctx.arc(0, 28, 5, 0, Math.PI * 2); ctx.fill();
     }
     if (av.decal === "crown") {
       const top = av.shape === "saucer" ? 12 : av.shape === "needle" ? -10 : -4;
