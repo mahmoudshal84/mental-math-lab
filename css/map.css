@@ -1,0 +1,124 @@
+/* Mental Math Lab: MAP Practice (home page card + map.html) */
+:root { --rainbow: #ff4f8b, #ff8a3d, #ffd23f, #2ee6a6, #3fb6ff, #7b6bff, #c36bff; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ---------- Home page card: a slowly turning rainbow border around a night-sky card ---------- */
+@property --map-turn { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.map-card {
+  margin: 0 0 44px; padding: 6px; border-radius: var(--radius-lg);
+  background: conic-gradient(from var(--map-turn), var(--rainbow), #ff4f8b);
+  box-shadow: 8px 8px 0 var(--ink);
+  animation: map-turn 9s linear infinite;
+}
+@keyframes map-turn { to { --map-turn: 360deg; } }
+.map-card-in {
+  position: relative; overflow: hidden; isolation: isolate;
+  display: flex; gap: 16px 28px; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  background: var(--ink); color: var(--paper); border-radius: 13px; padding: 24px 28px;
+}
+/* A rainbow arc rising from the bottom-right corner */
+.map-card-in::before {
+  content: ""; position: absolute; z-index: -1; right: -40px; bottom: -205px; width: 330px; height: 330px; border-radius: 50%;
+  background: radial-gradient(circle closest-side, transparent 44%, #c36bff 44% 52%, #7b6bff 52% 60%, #3fb6ff 60% 68%, #2ee6a6 68% 76%, #ffd23f 76% 84%, #ff8a3d 84% 92%, #ff4f8b 92% 100%);
+}
+.map-card h2 {
+  display: block; width: fit-content; font-family: var(--display); font-weight: 400; font-size: clamp(1.9rem, 4.6vw, 2.8rem); line-height: 1; margin: 0 0 10px;
+  background: linear-gradient(90deg, var(--rainbow)); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.map-card-in > div { flex: 1 1 320px; min-width: 0; }
+.map-card p { margin: 0; max-width: 54ch; }
+.map-card .map-best { margin-top: 10px; display: inline-block; background: rgba(246,247,255,.12); border-radius: var(--radius-sm); padding: 4px 10px; font-size: 0.93rem; font-weight: 600; }
+.map-card .btn { background: var(--sun); color: var(--ink); border-color: var(--ink); box-shadow: 4px 4px 0 #000; }
+.map-card .btn:hover { background: var(--paper); }
+.map-mini { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.map-mini span { display: flex; gap: 2px; }
+.map-mini i { width: 7px; height: 7px; border-radius: 50%; background: rgba(246,247,255,.2); }
+.map-mini i.done { background: var(--c); }
+@media (prefers-reduced-motion: reduce) { .map-card { animation: none; } }
+
+/* ---------- MAP Practice page ---------- */
+.map-wrap { max-width: 920px; }
+.map-mark { font-size: clamp(2rem, 5vw, 3rem); }
+.map-page .top { margin-bottom: 24px; }
+.map-start, .map-end { max-width: 660px; }
+.map-rules { padding-left: 20px; margin: 12px 0 18px; }
+.map-rules li { margin-bottom: 8px; }
+.map-start-best { font-weight: 700; margin: 0 0 16px; }
+
+/* Progress track: one group per stage, one pip per question */
+.map-track-wrap { background: rgba(21,26,69,.6); border-radius: var(--radius-lg); padding: 12px 14px; margin-bottom: 12px; }
+.map-track { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
+.map-stage { display: flex; gap: 3px; }
+.map-pip { flex: 1; height: 12px; border-radius: 6px; background: rgba(246,247,255,.16); }
+.map-pip.first { background: var(--c); }
+.map-pip.help { background: linear-gradient(90deg, var(--c) 50%, rgba(246,247,255,.16) 50%); }
+.map-pip.missed { background: transparent; box-shadow: inset 0 0 0 2px var(--c); }
+.map-pip.now { background: var(--paper); box-shadow: 0 0 0 2px var(--c); }
+@media (max-width: 560px) { .map-track { gap: 5px; } .map-stage { gap: 2px; } .map-pip { height: 9px; } }
+
+.map-status { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.map-status .stat { font-size: 0.92rem; padding: 6px 12px; }
+.map-status .map-wrong { color: var(--sun); font-weight: 700; }
+
+/* The question card */
+.map-q { padding: 24px 30px 26px; }
+@media (max-width: 560px) { .map-q { padding: 20px 18px; } }
+.map-q-head { display: flex; gap: 8px 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.map-topic { background: var(--ink); color: var(--paper); font-weight: 700; font-size: 0.85rem; padding: 3px 12px; border-radius: 999px; }
+.map-similar { background: var(--sun); color: var(--ink); font-weight: 700; font-size: 0.85rem; padding: 3px 12px; border-radius: 999px; }
+.map-prompt { font-size: clamp(1.15rem, 2.6vw, 1.4rem); font-weight: 600; line-height: 1.5; white-space: pre-line; margin: 0 0 18px; max-width: 62ch; }
+.map-prompt:focus { outline: none; }
+.map-fig { margin: 0 0 20px; overflow-x: auto; }
+.map-fig svg { display: block; width: 100%; max-width: 420px; height: auto; margin: 0 auto; }
+.map-table { border-collapse: collapse; margin: 0 auto; font-size: 1.1rem; }
+.map-table th, .map-table td { border: 2px solid var(--ink); padding: 8px 18px; text-align: center; }
+.map-table th { background: #e8ebff; text-align: left; }
+.map-table td.q { background: var(--sun); font-weight: 700; }
+
+.map-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+@media (max-width: 640px) { .map-choices { grid-template-columns: 1fr; } }
+.map-choice {
+  display: flex; align-items: center; gap: 12px; text-align: left; cursor: pointer;
+  font: inherit; font-size: 1.08rem; background: #fff; color: var(--ink);
+  border: 3px solid #c9cef0; border-radius: var(--radius-sm); padding: 12px 14px;
+}
+.map-choice:hover:not(:disabled) { border-color: var(--cobalt); }
+.map-letter { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--ink); display: grid; place-items: center; font-weight: 700; font-size: 0.9rem; }
+.map-choice.sel { border-color: var(--cobalt); background: #e8ebff; }
+.map-choice.sel .map-letter { background: var(--cobalt); border-color: var(--cobalt); color: #fff; }
+.map-choice.right { background: var(--mint); border-color: var(--ink); }
+.map-choice.right .map-letter { background: var(--ink); color: var(--mint); }
+.map-choice.wrong { background: #ffd6e3; border-color: var(--pink); }
+.map-choice.wrong .map-letter { background: var(--pink); border-color: var(--pink); color: #fff; }
+.map-choice:disabled { cursor: default; }
+.map-q .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.map-fb { min-height: 1.5em; font-weight: 700; margin: 12px 0 0; }
+.map-fb.good { color: #0a7a55; }
+.map-fb:empty { margin: 0; min-height: 0; }
+
+/* Worked explanation after a miss */
+.map-explain { margin-top: 16px; background: #fff7d6; border-left: 6px solid var(--sun); border-radius: var(--radius-sm); padding: 16px 20px 18px; }
+.map-explain h3 { margin: 0 0 10px; font-size: 1.15rem; }
+.map-explain ol { margin: 0 0 12px; padding-left: 22px; max-width: 66ch; }
+.map-explain li { margin-bottom: 6px; }
+.map-answer { font-size: 1.1rem; margin: 0 0 6px; }
+.map-answer b { background: var(--mint); padding: 1px 8px; border-radius: 6px; }
+.map-ex-note { margin: 0 0 14px; opacity: 0.8; }
+.map-keys { font-size: 0.85rem; opacity: 0.75; margin: 12px 0 0; }
+
+/* Results */
+.map-end-score { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin: 6px 0 4px; }
+.map-end-score strong {
+  font-family: var(--display); font-weight: 400; font-size: clamp(3.6rem, 12vw, 5.6rem); line-height: 1;
+  background: linear-gradient(90deg, var(--rainbow)); -webkit-background-clip: text; background-clip: text; color: transparent;
+  -webkit-text-stroke: 2px var(--ink);
+}
+.map-end-score span { font-size: 1.25rem; font-weight: 700; }
+.map-end-best { margin: 0 0 6px; font-weight: 600; }
+.map-end-best.new { display: inline-block; background: var(--mint); padding: 4px 12px; border-radius: var(--radius-sm); font-weight: 700; }
+.map-end h3 { margin: 18px 0 8px; }
+.map-topics { list-style: none; padding: 0; margin: 0 0 14px; }
+.map-topics li { display: grid; grid-template-columns: minmax(130px, 170px) 1fr auto; gap: 12px; align-items: center; padding: 6px 0; border-bottom: 1px solid #d8dcf5; }
+.map-bar { height: 10px; background: #e2e5f7; border-radius: 5px; overflow: hidden; }
+.map-bar i { display: block; height: 100%; background: var(--cobalt); border-radius: 5px; }
+.map-tip { background: #e8ebff; border-left: 5px solid var(--cobalt); padding: 10px 14px; border-radius: 6px; margin: 0 0 20px; }
