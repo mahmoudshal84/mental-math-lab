@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MAP Practice · Mental Math Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Lexend:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/map.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌈</text></svg>">
+</head>
+<body data-themed class="map-page">
+  <div class="wrap map-wrap">
+    <header class="top">
+      <div>
+        <a class="wordmark map-mark" href="index.html">MAP<br>Practice</a>
+        <p class="tagline">Questions like the ones on the MAP test, from warm-up to the hard stuff.</p>
+      </div>
+      <nav class="nav" aria-label="Main" id="mapNav"><a href="index.html">Back to games</a></nav>
+    </header>
+
+    <p id="loading">Loading…</p>
+
+    <main id="main" hidden>
+      <!-- Start -->
+      <section class="panel map-start" id="startView" aria-labelledby="h-start" hidden>
+        <h2 id="h-start">Ready for MAP Practice?</h2>
+        <ul class="map-rules">
+          <li><b>42 questions</b> from all 8 topics, in 7 stages that start easy and get harder.</li>
+          <li><b>No timer.</b> Take your time and use scratch paper, like on the real test.</li>
+          <li><b>Miss one?</b> You'll see how to solve it, then get a similar question. Get it right to move on.</li>
+          <li><b>Your score</b> is your number of wrong attempts, so fewer is better.</li>
+          <li><b>Coins:</b> 2 for each question right on the first try, plus 30 for finishing.</li>
+        </ul>
+        <p class="map-start-best" id="startBest"></p>
+        <div class="actions">
+          <button class="btn btn-primary" id="startBtn" type="button">Start MAP Practice</button>
+          <button class="btn btn-ghost" id="startOver" type="button" hidden>Start over</button>
+        </div>
+        <p class="note">Your place saves after every answer, so you can finish next class.</p>
+      </section>
+
+      <!-- Questions -->
+      <section id="runView" aria-label="MAP Practice question" hidden>
+        <div class="map-track-wrap">
+          <div class="map-track" id="track" aria-hidden="true"></div>
+          <p class="sr-only" id="trackText"></p>
+        </div>
+        <div class="map-status">
+          <span class="stat" id="qNum"></span>
+          <span class="stat" id="qStage"></span>
+          <span class="stat map-wrong" id="qWrong"></span>
+          <span class="stat" id="qBest"></span>
+        </div>
+
+        <article class="panel map-q">
+          <div class="map-q-head">
+            <span class="map-topic" id="qTopic"></span>
+            <span class="map-similar" id="qSimilar" hidden>Similar question: use what you just learned</span>
+          </div>
+          <h2 class="map-prompt" id="qPrompt" tabindex="-1"></h2>
+          <div class="map-fig" id="qFig"></div>
+          <div class="map-choices" id="qChoices" role="radiogroup" aria-labelledby="qPrompt"></div>
+          <div class="actions">
+            <button class="btn btn-primary" id="checkBtn" type="button" disabled>Check answer</button>
+          </div>
+          <p class="map-fb" id="qFb" aria-live="polite"></p>
+
+          <div class="map-explain" id="explain" hidden aria-live="polite">
+            <h3 id="exTitle">Not quite. Here's how to solve it</h3>
+            <ol id="exSteps"></ol>
+            <p class="map-answer" id="exAnswer"></p>
+            <p class="map-ex-note" id="exNote"></p>
+            <button class="btn btn-primary" id="nextBtn" type="button">Try a similar question</button>
+          </div>
+        </article>
+        <p class="map-keys">Keyboard: press 1 to 4 (or A to D) to pick an answer, then Enter to check it.</p>
+        <p class="error" id="saveNote" role="status"></p>
+      </section>
+
+      <!-- Results -->
+      <section class="panel map-end" id="endView" aria-labelledby="h-end" hidden>
+        <h2 id="h-end">MAP Practice complete!</h2>
+        <div class="map-end-score">
+          <strong id="endWrong">0</strong>
+          <span id="endWrongLabel">wrong attempts</span>
+        </div>
+        <p class="map-end-best" id="endBest"></p>
+        <div class="stats">
+          <div><b id="endFirst"></b><span>right on the first try</span></div>
+          <div><b id="endCoins"></b><span>coins earned</span></div>
+        </div>
+        <h3>First-try answers by topic</h3>
+        <ul class="map-topics" id="endTopics"></ul>
+        <p class="map-tip" id="endTip"></p>
+        <div class="actions">
+          <button class="btn btn-primary" id="againBtn" type="button">Start a new run</button>
+          <a class="btn btn-ghost" href="index.html">Back to games</a>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/games.js"></script>
+  <script src="js/problems.js"></script>
+  <script src="js/avatar.js"></script>
+  <script src="js/progress.js"></script>
+  <script src="js/backend.js"></script>
+  <script src="js/lock.js"></script>
+  <script src="js/help.js"></script>
+  <script src="js/map-questions.js"></script>
+  <script src="js/map.js"></script>
+</body>
+</html>
