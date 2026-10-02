@@ -74,7 +74,7 @@ MML.help = (function () {
         <p>Your <b>record</b> (wins and losses) is on the home page. A match counts as soon as it starts, so leaving early counts as a loss.
         In Blast Battle, a tie for first counts as a win for everyone tied.</p>`],
             ["🌈", "MAP Practice", `
-        <p>MAP Practice gets you ready for the MAP Growth test. Each run is 42 questions from all 8 topics, in 7 stages that start easy and get harder.</p>
+        <p>MAP Practice gets you ready for the MAP Growth test. Each run is 42 questions, in 7 stages that start easy and get harder.</p>
         <ul><li><b>No timer:</b> take your time and use scratch paper.</li>
         <li><b>Miss one?</b> You'll see how to solve it step by step, then get a similar question with new numbers. Get it right to move on.</li>
         <li><b>3 misses</b> on the same question shows you the worked answer, and then you move on.</li>
