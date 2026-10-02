@@ -429,6 +429,157 @@ window.MML = window.MML || {};
       `Get the x's on one side: subtract ${coef(c)} from both sides first.`);
   }
 
+   /* ===== Geometry and Data & probability (paste this whole block into js/problems.js) ===== */
+  /* ---------- Geometry ---------- */
+  function geoRect() {
+    let l, w; do { l = rand(3, 15); w = rand(2, 12); } while (l === w);
+    if (Math.random() < 0.5)
+      return make(`Rectangle ${l} by ${w}. Area?`, l * w, [2 * (l + w), l + w, l * w + l], `Area = length × width: ${l} × ${w} = ${l * w}.`);
+    return make(`Rectangle ${l} by ${w}. Perimeter?`, 2 * (l + w), [l * w, l + w, 2 * l + w], `Perimeter adds all 4 sides: ${l} + ${w} + ${l} + ${w} = ${2 * (l + w)}.`);
+  }
+  function geoTriPara() {
+    const type = rand(1, 3);
+    if (type === 1) {
+      let b, h; do { b = rand(3, 16); h = rand(2, 12); } while ((b * h) % 2);
+      return make(`Triangle: base ${b}, height ${h}. Area?`, (b * h) / 2, [b * h, b + h, (b * h) / 2 + b],
+        `Triangle area is half of base × height: ${b} × ${h} = ${b * h}, and half is ${(b * h) / 2}.`);
+    }
+    if (type === 2) {
+      const b = rand(3, 14), h = rand(2, 11);
+      return make(`Parallelogram: base ${b}, height ${h}. Area?`, b * h, [(b * h) / 2, 2 * (b + h), b + h],
+        `Parallelogram area = base × height: ${b} × ${h} = ${b * h}.`);
+    }
+    const w = rand(3, 9), l = rand(4, 12), A = l * w;
+    return make(`Rectangle: area ${A}, width ${w}. Length?`, l, [A - w, A * w, A / 2], `Length × ${w} = ${A}, so length = ${A} ÷ ${w} = ${l}.`);
+  }
+  function geoAngles() {
+    const type = rand(1, 4);
+    if (type === 1) {
+      let a, b; do { a = rand(25, 95); b = rand(25, 95); } while (a + b > 155);
+      return make(`Triangle angles: ${a}°, ${b}°, x°. x?`, 180 - a - b, [360 - a - b, a + b, Math.abs(90 - a)],
+        `The angles in a triangle add to 180°: 180 ${MINUS} ${a} ${MINUS} ${b} = ${180 - a - b}.`);
+    }
+    if (type === 2) {
+      let a; do { a = rand(20, 160); } while (Math.abs(a - 90) < 6);
+      return make(`Straight line: ${a}° and x°. x?`, 180 - a, [Math.abs(90 - a), 360 - a, a],
+        `Angles on a straight line add to 180°: 180 ${MINUS} ${a} = ${180 - a}.`);
+    }
+    if (type === 3) {
+      const a = rand(12, 78);
+      return make(`Right angle split: ${a}° and x°. x?`, 90 - a, [180 - a, a, 100 - a],
+        `A right angle is 90°, so the two parts add to 90: 90 ${MINUS} ${a} = ${90 - a}.`);
+    }
+    let a; do { a = rand(25, 155); } while (Math.abs(a - 90) < 6);
+    return make(`Vertical angles: one is ${a}°. The other?`, a, [180 - a, 360 - a, Math.abs(90 - a)],
+      `Vertical angles (across from each other where two lines cross) are equal: ${a}°.`);
+  }
+  function geoSolids() {
+    const type = rand(1, 4);
+    if (type === 1) {
+      const l = rand(2, 9), w = rand(2, 6), h = rand(2, 6);
+      return make(`Box ${l} × ${w} × ${h}. Volume?`, l * w * h, [l + w + h, 2 * (l * w + l * h + w * h), l * w, l * w * h + l * w],
+        `Volume = length × width × height: ${l} × ${w} = ${l * w}, then × ${h} = ${l * w * h}.`);
+    }
+    if (type === 2) {
+      const r = rand(1, 10), A = Math.round(3.14 * r * r * 100) / 100;
+      return make(`Circle area, r = ${r} (π ≈ 3.14)?`, A, [Math.round(6.28 * r * 100) / 100, Math.round(3.14 * r * 100) / 100, Math.round(3.14 * 4 * r * r * 100) / 100],
+        `Area = π × r × r: 3.14 × ${r * r} = ${fmt(A)}.`);
+    }
+    if (type === 3) {
+      const d = rand(2, 10), C = Math.round(3.14 * d * 100) / 100;
+      return make(`Circumference, d = ${d} (π ≈ 3.14)?`, C, [Math.round(6.28 * d * 100) / 100, Math.round(3.14 * (d / 2) * (d / 2) * 100) / 100, Math.round(3.14 * d * d * 100) / 100],
+        `Circumference = π × diameter: 3.14 × ${d} = ${fmt(C)}.`);
+    }
+    const [a, b, c] = pick([[3, 4, 5], [6, 8, 10], [5, 12, 13], [9, 12, 15], [8, 15, 17], [12, 16, 20]]);
+    if (Math.random() < 0.5)
+      return make(`Legs ${a} and ${b}. Hypotenuse?`, c, [a + b, a * a + b * b, c + 1],
+        `a² + b² = c²: ${a * a} + ${b * b} = ${c * c}, and √${c * c} = ${c}.`);
+    return make(`Leg ${a}, hypotenuse ${c}. Other leg?`, b, [c - a, c + a, c * c - a * a],
+      `a² + b² = c²: ${c * c} ${MINUS} ${a * a} = ${b * b}, and √${b * b} = ${b}.`);
+  }
+
+  /* ---------- Data & probability ---------- */
+  const dataSort = (v) => v.slice().sort((a, b) => a - b);
+  function dataMMR() {
+    const type = rand(1, 3);
+    if (type === 1) {
+      const n = pick([5, 5, 7]);
+      let v; do { v = Array.from({ length: n }, () => rand(1, 20)); } while (v[(n - 1) / 2] === dataSort(v)[(n - 1) / 2]);
+      const s = dataSort(v), med = s[(n - 1) / 2];
+      return make(`Median of ${v.join(", ")}`, med, [v[(n - 1) / 2], s[n - 1] - s[0], s[n - 1]],
+        `Put them in order: ${s.join(", ")}. The middle number is ${med}.`);
+    }
+    if (type === 2) {
+      let v, m; do { m = rand(1, 15); v = [m, m, ...Array.from({ length: 3 }, () => rand(1, 15))]; } while (new Set(v).size !== 4);
+      v.sort(() => Math.random() - 0.5);
+      const s = dataSort(v), others = s.filter((x) => x !== m);
+      return make(`Mode of ${v.join(", ")}`, m, [...others, s[2]],
+        `The mode is the number that shows up most often. ${m} appears twice.`);
+    }
+    let v; do { v = Array.from({ length: 5 }, () => rand(2, 30)); } while (new Set(v).size < 5);
+    const s = dataSort(v);
+    return make(`Range of ${v.join(", ")}`, s[4] - s[0], [s[4], s[4] + s[0], s[2]],
+      `Range = greatest ${MINUS} least: ${s[4]} ${MINUS} ${s[0]} = ${s[4] - s[0]}.`);
+  }
+  function dataMean() {
+    if (Math.random() < 0.7) {
+      const n = pick([3, 4, 4, 5]);
+      let v; do { v = Array.from({ length: n }, () => rand(1, 20)); } while (v.reduce((a, b) => a + b, 0) % n);
+      const sum = v.reduce((a, b) => a + b, 0), m = sum / n, s = dataSort(v);
+      const med = n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2;
+      return make(`Mean of ${v.join(", ")}`, m, [sum, med, m + 1],
+        `Add them: ${v.join(" + ")} = ${sum}. Divide by ${n}: ${sum} ÷ ${n} = ${m}.`);
+    }
+    const m = rand(4, 12), a = rand(1, m + 3), b = rand(1, m + 3), x = 3 * m - a - b;
+    if (x < 1) return dataMean();
+    return make(`Mean of ${a}, ${b}, and x is ${m}. x?`, x, [m, 3 * m, 2 * m - a - b > 0 ? 2 * m - a - b : x + 3],
+      `The 3 numbers must add to 3 × ${m} = ${3 * m}. So x = ${3 * m} ${MINUS} ${a} ${MINUS} ${b} = ${x}.`);
+  }
+  function dataProb() {
+    const type = rand(1, 4);
+    if (type === 1) {
+      let r, b; do { r = rand(1, 9); b = rand(1, 9); } while (r === b);
+      const T = r + b;
+      return make(`Bag: ${r} red, ${b} blue. P(red)?`, frac(r, T), [frac(r, b), frac(b, T), frac(1, T), frac(r, T + 1)],
+        `${r} of the ${T} marbles are red, so P(red) = ${r}/${T}.`);
+    }
+    if (type === 2) {
+      let r, b; do { r = rand(1, 8); b = rand(1, 8); } while (r === b);
+      const T = r + b;
+      return make(`Bag: ${r} red, ${b} blue. P(not red)?`, frac(b, T), [frac(r, T), frac(b, r), frac(1, T), frac(b, T + 1)],
+        `Not red means blue: ${b} of the ${T} marbles, so P = ${b}/${T}.`);
+    }
+    if (type === 3) {
+      const [desc, f] = pick([["even", 3], ["a 5", 1], ["less than 3", 2], ["more than 2", 4], ["odd", 3], ["a 1 or 6", 2]]);
+      return make(`Number cube: P(${desc})?`, frac(f, 6), [f < 6 ? frac(f, 6 - f) : null, frac(1, 6) === frac(f, 6) ? frac(1, 2) : frac(1, 6), frac(f, 12), frac(6 - f, 6)],
+        `${f} of the 6 sides count, so P = ${f}/6${frac(f, 6) !== `${f}/6` ? ` = ${frac(f, 6)}` : ""}.`);
+    }
+    let k; const n = pick([4, 5, 8, 10]); do { k = rand(1, n - 1); } while (frac(k, n) === frac(n - k, n));
+    return make(`Spinner, ${n} parts, ${k} blue. P(blue)?`, frac(k, n), [frac(k, n - k), frac(n - k, n), frac(1, n), frac(k, n + 1)],
+      `${k} of the ${n} equal parts are blue, so P = ${k}/${n}${frac(k, n) !== `${k}/${n}` ? ` = ${frac(k, n)}` : ""}.`);
+  }
+  function dataPredict() {
+    const type = rand(1, 4);
+    if (type === 1) {
+      const [desc, f] = pick([["5s", 1], ["evens", 3], ["6s", 1], ["1s or 2s", 2]]), N = 6 * pick([5, 10, 20, 30, 50]);
+      return make(`${N} rolls of a cube. How many ${desc}?`, (N * f) / 6, [N / 6 === (N * f) / 6 ? N / 2 : N / 6, N - (N * f) / 6, N / f],
+        `P = ${f}/6, and ${f}/6 of ${N} is ${(N * f) / 6}.`);
+    }
+    if (type === 2) {
+      const [desc, f] = pick([["a 6", 1], ["an even", 3], ["a 1 or 2", 2]]);
+      return make(`Coin + cube: P(heads and ${desc})?`, frac(f, 12), [frac(f, 8), frac(f, 6), frac(1, 2), frac(f + 1, 12)],
+        `Multiply the chances: 1/2 × ${frac(f, 6)} = ${frac(f, 12)}.`);
+    }
+    if (type === 3) {
+      const n = pick([2, 3]);
+      return make(`Flip ${n} coins. P(all heads)?`, frac(1, 2 ** n), n === 2 ? ["1/2", "1/3", "3/4"] : ["1/2", "1/3", "1/6", "3/8"],
+        `Each coin is 1/2, so multiply: ${Array(n).fill("1/2").join(" × ")} = ${frac(1, 2 ** n)}.`);
+    }
+    let s, y, N; do { s = pick([10, 20, 40, 50]); y = rand(2, s - 2); N = pick([100, 200, 400, 500]); } while ((N * y) % s);
+    return make(`${y} of ${s} said yes. How many of ${N}?`, (N * y) / s, [y * 10, N - (N * y) / s, N / s + y],
+      `${y}/${s} said yes. ${y}/${s} of ${N} = ${(N * y) / s}.`);
+  }
+   
   /* ---------- Strand list ---------- */
   MML.problems = {
     order: ["facts", "integers", "fdp", "ratios", "exponents", "equations"],
