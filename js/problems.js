@@ -582,7 +582,7 @@ window.MML = window.MML || {};
    
   /* ---------- Strand list ---------- */
   MML.problems = {
-    order: ["facts", "integers", "fdp", "ratios", "exponents", "equations"],
+        order: ["facts", "integers", "fdp", "ratios", "exponents", "equations", "geometry", "data"],
     strands: {
       facts: { name: "Quick facts", blurb: "Times tables, division, decimals", levels: [
         { name: "Times tables to 9", gen: () => multFact(2, 9) },
