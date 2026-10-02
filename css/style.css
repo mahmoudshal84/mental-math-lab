@@ -845,7 +845,7 @@ body.in-race { overflow-x: hidden; }
   border: 6px solid transparent;
   background:
     linear-gradient(var(--ink), var(--ink)) padding-box,
-    conic-gradient(from var(--card-turn), var(--pink), #c36bff, #3fb6ff, var(--sun), var(--pink)) border-box;
+        conic-gradient(from var(--card-turn), #ffc2d6, var(--pink), #b8104a, var(--pink), #ffc2d6) border-box;
   box-shadow: 8px 8px 0 var(--ink);
   animation: card-turn 10s linear infinite;
 }
@@ -855,7 +855,7 @@ body.in-race { overflow-x: hidden; }
   border: 6px solid transparent;
   background:
     linear-gradient(#ff8a3d, #ff8a3d) padding-box,
-    conic-gradient(from var(--card-turn), var(--mint), #3fb6ff, var(--pink), #c36bff, var(--mint)) border-box;
+        conic-gradient(from var(--card-turn), #ffd3ad, #ff8a3d, #c4520c, #ff8a3d, #ffd3ad) border-box;
   animation: card-turn 8s linear infinite reverse;
 }
 
@@ -864,7 +864,7 @@ body.in-race { overflow-x: hidden; }
   border: 6px solid transparent;
   background:
     linear-gradient(var(--mint), var(--mint)) padding-box,
-    conic-gradient(from var(--card-turn), var(--pink), #ff8a3d, var(--sun), #c36bff, var(--pink)) border-box;
+        conic-gradient(from var(--card-turn), #c9fff0, var(--mint), #0b9a6c, var(--mint), #c9fff0) border-box;
   animation: card-turn 12s linear infinite;
 }
 
