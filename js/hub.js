@@ -78,6 +78,20 @@
     $("vsRecord").innerHTML = vr.race.played + vr.blast.played
       ? `Your record: <b>Race to 5</b> ${PR.versusText(prog, "race")}. <b>Blast Battle</b> ${PR.versusText(prog, "blast")}.`
       : "Your record: no matches yet.";
+        // MAP Practice card: best finished run, or where an unfinished run left off
+    const mp = prog.map || {}, mpRun = mp.run && Array.isArray(mp.run.plan) ? mp.run : null;
+    $("mapBest").textContent = typeof mp.best === "number"
+      ? `Your best: ${mp.best} wrong attempt${mp.best === 1 ? "" : "s"}. Fewer is better.` : "No finished run yet";
+    if (mpRun) {
+      $("mapBtn").textContent = `Continue: question ${mpRun.i + 1} of 42`;
+      const mini = $("mapMini"), colors = ["#ff4f8b", "#ff8a3d", "#ffd23f", "#2ee6a6", "#3fb6ff", "#7b6bff", "#c36bff"];
+      for (let s = 0; s < 7; s++) {
+        const g = document.createElement("span"); g.style.setProperty("--c", colors[s]);
+        for (let k = 0; k < 6; k++) { const d = document.createElement("i"); if (s * 6 + k < mpRun.i) d.className = "done"; g.appendChild(d); }
+        mini.appendChild(g);
+      }
+      mini.hidden = false;
+    }
     $("starCount").textContent = PR.totalStars(prog);
     $("xp").textContent = prog.xp;
     $("logout").onclick = async () => { await B.logout(); location.href = "index.html"; };
