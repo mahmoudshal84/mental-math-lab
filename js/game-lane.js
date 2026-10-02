@@ -11,7 +11,7 @@ MML.games.lane = {
   ],
   create(S) {
     const C = S.C, AV = MML.avatar;
-    const BASE = S.arcade ? 8 : 7 + S.level * 0.6 + (S.topic === "fdp" && S.level === 3 ? 2 : 0) + (S.topic === "ratios" ? 1.5 : 0);
+    const BASE = S.arcade ? 8 : 7 + S.level * 0.6 + (S.topic === "fdp" && S.level === 3 ? 2 : 0) + (["ratios", "geometry", "data"].includes(S.topic) ? 1.5 : 0);
     const FASTEST = BASE * (S.arcade ? 0.4 : 0.45), BOOST = 3.2, SPEED_UP = 0.95, SLOW_DOWN = S.arcade ? 1.1 : 1.25;
     let lane = 1, px = 0, scroll = 0, gate = null, spawnIn = 0.4, boost = false, travel = BASE;
 
