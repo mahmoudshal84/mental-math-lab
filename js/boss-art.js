@@ -6,7 +6,9 @@ MML.bosses = {
   fdp: { name: "The Fraction Golem", body: "#b6f23a", dark: "#6d9612", symbol: "%", horns: false, rocks: true },
   ratios: { name: "The Ratio Raptor", body: "#ff4f8b", dark: "#a8144a", symbol: ":", horns: true, spikes: true },
   exponents: { name: "The Power Hydra", body: "#b69cff", dark: "#6a4bc2", symbol: "x²", horns: false, heads: true },
-  equations: { name: "Mister X", body: "#2ee6a6", dark: "#11966a", symbol: "x", horns: true },
+    equations: { name: "Mister X", body: "#2ee6a6", dark: "#11966a", symbol: "x", horns: true },
+  geometry: { name: "The Shape Shifter", body: "#ffd23f", dark: "#b38f00", symbol: "△", horns: false, spikes: true },
+  data: { name: "The Data Dragon", body: "#e08cff", dark: "#9a3fb8", symbol: "?", horns: true },
 };
 MML.drawBoss = function (ctx, kind, cx, cy, size, t, hurt, mad) {
   const b = MML.bosses[kind] || MML.bosses.facts, INK = "#151a45";
