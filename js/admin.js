@@ -79,7 +79,7 @@
     if (!list.length) { body.innerHTML = "<tr><td colspan='9'>No students yet. Add some above.</td></tr>"; return; }
     for (const s of list) {
       const tr = document.createElement("tr");
-      [s.displayName, s.username, s.grade, s.password, s.stars, s.xp, s.coins, ago(s.lastActive)].forEach((v) => {
+            [s.displayName, s.username, s.grade, s.password, typeof s.mapBest === "number" ? s.mapBest : "No finished run", s.stars, s.xp, s.coins, ago(s.lastActive)].forEach((v) => {
         const td = document.createElement("td"); td.textContent = v; tr.appendChild(td);
       });
       const cell = document.createElement("td"), acts = document.createElement("div");
