@@ -13,7 +13,7 @@ MML.games.blast = {
     const C = S.C, P = MML.problems;
     const MAX_ROCKS = 5;
     let rocks = [], spawnIn = 0, every = 4, fall = 12, scroll = 0, beam = null, aim = 0;
-    const baseFall = S.arcade ? 13 : 11 + S.level * 0.4 + (S.topic === "fdp" && S.level === 3 ? 3 : 0) + (S.topic === "ratios" ? 2 : 0);
+    const baseFall = S.arcade ? 13 : 11 + S.level * 0.4 + (S.topic === "fdp" && S.level === 3 ? 3 : 0) + (["ratios", "geometry", "data"].includes(S.topic) ? 2 : 0);
 
     // Answer box
     const form = document.createElement("form");
