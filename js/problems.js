@@ -612,7 +612,17 @@ window.MML = window.MML || {};
         { name: "One step: add and subtract", gen: oneStepAdd },
         { name: "One step: multiply and divide", gen: oneStepMul },
         { name: "Two steps", gen: twoStep },
-        { name: "Negatives and x on both sides", gen: equationsAdv }] },
+                { name: "Negatives and x on both sides", gen: equationsAdv }] },
+      geometry: { name: "Geometry", blurb: "Area, angles, volume, circles", levels: [
+        { name: "Rectangles: area and perimeter", gen: geoRect },
+        { name: "Triangles and parallelograms", gen: geoTriPara },
+        { name: "Angles", gen: geoAngles },
+        { name: "Volume, circles, and right triangles", gen: geoSolids }] },
+      data: { name: "Data & probability", blurb: "Mean, median, and chances", levels: [
+        { name: "Median, mode, and range", gen: dataMMR },
+        { name: "Mean", gen: dataMean },
+        { name: "Probability", gen: dataProb },
+        { name: "Predictions and combined chances", gen: dataPredict }] },
     },
     /* Checking typed answers: "3/4", "-5", "x^7", "4.2 x 10^3", "$60", "37.5%" all work */
     matches(typed, answer) {
