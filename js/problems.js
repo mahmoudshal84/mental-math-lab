@@ -648,11 +648,11 @@ window.MML = window.MML || {};
    Each entry is [topic, level]. Problems start from the front of the list and
    the pool grows as the run goes on, so arcade runs get harder over time. */
 window.MML.problems.mixes = {
-  6: [["facts", 1], ["integers", 1], ["fdp", 1], ["equations", 1], ["facts", 2], ["ratios", 1], ["exponents", 1],
-      ["fdp", 2], ["equations", 2], ["facts", 3], ["ratios", 2], ["facts", 4]],
-  7: [["facts", 2], ["integers", 1], ["fdp", 2], ["equations", 2], ["integers", 2], ["ratios", 2], ["facts", 3],
-      ["exponents", 1], ["fdp", 3], ["integers", 3], ["equations", 3], ["fdp", 4], ["ratios", 3]],
-  8: [["facts", 3], ["integers", 2], ["exponents", 1], ["equations", 2], ["fdp", 2], ["exponents", 2], ["integers", 3],
-      ["equations", 3], ["fdp", 3], ["exponents", 3], ["integers", 4], ["equations", 4], ["exponents", 4], ["fdp", 4]],
-  school: [["facts", 1], ["integers", 1], ["facts", 2], ["fdp", 1], ["equations", 1], ["exponents", 1], ["fdp", 2], ["integers", 2]],
+  6: [["facts", 1], ["integers", 1], ["fdp", 1], ["geometry", 1], ["equations", 1], ["data", 1], ["facts", 2], ["ratios", 1], ["exponents", 1],
+      ["fdp", 2], ["geometry", 2], ["equations", 2], ["data", 2], ["facts", 3], ["ratios", 2], ["facts", 4]],
+  7: [["facts", 2], ["integers", 1], ["fdp", 2], ["geometry", 1], ["equations", 2], ["integers", 2], ["data", 1], ["ratios", 2], ["facts", 3],
+      ["exponents", 1], ["geometry", 2], ["fdp", 3], ["data", 2], ["integers", 3], ["equations", 3], ["geometry", 3], ["data", 3], ["fdp", 4], ["ratios", 3]],
+  8: [["facts", 3], ["integers", 2], ["exponents", 1], ["geometry", 2], ["equations", 2], ["fdp", 2], ["data", 2], ["exponents", 2], ["integers", 3],
+      ["geometry", 3], ["equations", 3], ["data", 3], ["fdp", 3], ["exponents", 3], ["integers", 4], ["geometry", 4], ["equations", 4], ["data", 4], ["exponents", 4], ["fdp", 4]],
+  school: [["facts", 1], ["integers", 1], ["facts", 2], ["fdp", 1], ["geometry", 1], ["equations", 1], ["data", 1], ["exponents", 1], ["fdp", 2], ["integers", 2]],
 };
