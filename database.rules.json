@@ -5,7 +5,7 @@
       ".write": "auth != null && auth.uid === 'PASTE_YOUR_ADMIN_UID_HERE'",
       "hp": {
         ".write": "auth != null && newData.exists() && data.exists() && data.parent().child('active').val() === true",
-        ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= data.parent().child('maxHp').val() && data.val() - newData.val() <= 90 && newData.val() - data.val() <= 10"
+        ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= newData.parent().child('maxHp').val() && ((auth != null && auth.uid === 'PASTE_YOUR_ADMIN_UID_HERE') || (data.exists() && data.val() - newData.val() <= 90 && newData.val() - data.val() <= 10))"
       },
       "players": {
         "$uid": {
