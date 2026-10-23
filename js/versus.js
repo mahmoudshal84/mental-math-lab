@@ -371,7 +371,9 @@
     const pr = document.createElement("span"); pr.className = "pr"; pr.textContent = q.prompt;
     d.appendChild(pr);
     if (by) {
-      const ans = document.createElement("span"); ans.className = "ans"; ans.textContent = q.answer; d.appendChild(ans);
+      // The other team's board only shows a check mark, never the answer: both teams get the same problems
+      const ans = document.createElement("span"); ans.className = "ans"; ans.textContent = mine ? q.answer : "✓"; d.appendChild(ans);
+      if (!mine) ans.setAttribute("aria-label", "cleared");
       if (mine) { const who = document.createElement("small"); who.textContent = by === user.uid ? "You" : (room.players[by] ? room.players[by].name : ""); d.appendChild(who); }
     }
     if (q.prompt.length > 24) d.classList.add("long");
