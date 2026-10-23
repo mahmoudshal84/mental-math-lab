@@ -54,6 +54,12 @@
           <p class="access-state" id="siteState">Checking…</p>
           <p class="note">When the site is locked, students see a message instead of the games. A run in progress ends and is saved.</p>
           <button class="btn" id="siteBtn" type="button" disabled>…</button>
+          <div class="grade-locks" role="group" aria-labelledby="gradeLocksLabel">
+            <p class="note" id="gradeLocksLabel">Or lock just some grades:</p>
+            <button class="btn grade-lock" type="button" data-grade="6" aria-pressed="false" disabled>Grade 6</button>
+            <button class="btn grade-lock" type="button" data-grade="7" aria-pressed="false" disabled>Grade 7</button>
+            <button class="btn grade-lock" type="button" data-grade="8" aria-pressed="false" disabled>Grade 8</button>
+          </div>
         </div>
         <div class="access-item">
           <p class="access-state" id="arcState">Checking…</p>
@@ -158,7 +164,7 @@
           <label class="field" style="max-width:120px">Minutes <select id="bMin"><option>5</option><option selected>10</option><option>15</option><option>20</option></select></label>
           <label class="field" style="max-width:150px">Boss strength <select id="bDiff"><option value="0.6">Easy</option><option value="1" selected>Normal</option><option value="1.4">Hard</option></select></label>
         </div>
-        <p class="error" id="bossLockWarn" hidden>The site is locked, so students can't join a battle. Open the site first.</p>
+        <p class="error" id="bossLockWarn" hidden></p>
         <button class="btn btn-primary" id="bStart" type="button">Start battle</button>
       </div>
       <div id="bossLive" hidden>

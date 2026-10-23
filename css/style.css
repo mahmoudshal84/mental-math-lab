@@ -451,6 +451,9 @@ body[data-site="galaxy"], .site-swatch[data-site="galaxy"] {
 .access-state .open { color: #0a7a55; }
 .access-state .shut { color: #c4124f; }
 .btn-danger { background: var(--pink); color: #fff; }
+.grade-locks { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.grade-locks .note { flex-basis: 100%; margin: 0; }
+.grade-locks .btn { padding: 6px 14px; font-size: 0.9rem; }
 
 .boss-title { text-align: center; }
 .boss-credit { margin: 2px 0 0; font-weight: 600; color: var(--paper); }

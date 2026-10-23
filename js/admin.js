@@ -291,25 +291,40 @@
     }
   }
 
-  /* Site access: lock/unlock the whole site and Arcade */
+  /* Site access: lock/unlock the whole site (or just some grades), Arcade, and Versus */
   function setupAccess() {
     let s = null;
+    const gradeList = (gs) => gs.length === 1 ? `grade ${gs[0]}` : gs.length === 2 ? `grades ${gs[0]} and ${gs[1]}` : `grades ${gs.slice(0, -1).join(", ")}, and ${gs[gs.length - 1]}`;
     const draw = () => {
       if (!s) return;
-      $("siteState").innerHTML = s.open ? "Site: <b class='open'>Open</b>" : "Site: <b class='shut'>🔒 Locked</b>";
+      const lg = s.lockedGrades || [];
+      $("siteState").innerHTML = !s.open ? "Site: <b class='shut'>🔒 Locked</b>"
+        : lg.length ? `Site: <b class='shut'>🔒 Locked for ${gradeList(lg)}</b>` : "Site: <b class='open'>Open</b>";
+      document.querySelectorAll(".grade-lock").forEach((b) => {
+        const g = +b.dataset.grade, on = lg.includes(g);
+        b.textContent = (on ? "🔒 " : "") + "Grade " + g;
+        b.setAttribute("aria-pressed", String(on));
+        b.title = !s.open ? "The whole site is locked" : on ? `Open the site for grade ${g}` : `Lock the site for grade ${g} only`;
+        b.className = "btn grade-lock" + (on ? " btn-danger" : " btn-ghost");
+        b.disabled = !s.open; // while the whole site is locked, every grade is locked anyway
+      });
       $("arcState").innerHTML = s.arcadeOpen ? "Arcade: <b class='open'>Open</b>" : "Arcade: <b class='shut'>🔒 Locked</b>";
       $("vsState").innerHTML = s.versusOpen ? "Versus: <b class='open'>Open</b>" : "Versus: <b class='shut'>🔒 Locked</b>";
       $("vsBtn").textContent = s.versusOpen ? "Lock Versus" : "Open Versus";
       $("vsBtn").className = "btn " + (s.versusOpen ? "btn-danger" : "btn-primary");
       $("vsBtn").disabled = false;
-      $("siteBtn").textContent = s.open ? "Lock the site" : "Open the site";
+      $("siteBtn").textContent = s.open ? "Lock the whole site" : "Open the site";
       $("arcBtn").textContent = s.arcadeOpen ? "Lock Arcade" : "Open Arcade";
       $("siteBtn").className = "btn " + (s.open ? "btn-danger" : "btn-primary");
       $("arcBtn").className = "btn " + (s.arcadeOpen ? "btn-danger" : "btn-primary");
       $("siteBtn").disabled = $("arcBtn").disabled = false;
       if (document.activeElement !== $("lockMsgIn")) $("lockMsgIn").value = s.message;
       const warn = $("bossLockWarn");
-      if (warn) warn.hidden = s.open;
+      if (warn) {
+        warn.textContent = !s.open ? "The site is locked, so students can't join a battle. Open the site first."
+          : lg.length ? `The site is locked for ${gradeList(lg)}, so those students can't join a battle.` : "";
+        warn.hidden = s.open && !lg.length;
+      }
     };
     B.settings.watch((v, err) => { s = v; $("accessErr").textContent = err ? err.message : ""; draw(); })
       .catch((e) => ($("accessErr").textContent = e.message));
@@ -318,7 +333,15 @@
       try { await B.settings.set(patch); } catch (e) { $("accessErr").textContent = e.message; }
       btn.disabled = false;
     };
-    $("siteBtn").onclick = (e) => s && set({ open: !s.open }, e.currentTarget);
+    // "Open the site" opens it for every grade; "Lock the whole site" locks every grade
+    $("siteBtn").onclick = (e) => s && set(s.open ? { open: false } : { open: true, lockedGrades: [] }, e.currentTarget);
+    document.querySelectorAll(".grade-lock").forEach((b) => (b.onclick = (e) => {
+      if (!s) return;
+      const g = +b.dataset.grade, lg = s.lockedGrades || [];
+      const next = lg.includes(g) ? lg.filter((x) => x !== g) : [...lg, g].sort();
+      s = Object.assign({}, s, { lockedGrades: next }); draw(); // show it right away, so quick clicks on two grades both count
+      set({ lockedGrades: next }, e.currentTarget);
+    }));
     $("arcBtn").onclick = (e) => s && set({ arcadeOpen: !s.arcadeOpen }, e.currentTarget);
     $("vsBtn").onclick = (e) => s && set({ versusOpen: !s.versusOpen }, e.currentTarget);
     $("lockMsgSave").onclick = async (e) => {

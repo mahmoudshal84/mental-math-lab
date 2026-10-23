@@ -16,13 +16,17 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if isAdmin();
     }
-    // Students can only save while the site is open. After the teacher locks it,
+    // Students can only save while the site is open for their grade. After the teacher locks it,
     // there's a 3 minute grace period so runs that were in progress still save.
     function siteOpen() {
       let path = /databases/$(database)/documents/site/settings;
       return !exists(path)
-          || get(path).data.get('open', true) != false
+          || (get(path).data.get('open', true) != false && gradeOpen(get(path).data.get('lockedGrades', [])))
           || request.time < get(path).data.changedAt + duration.value(3, 'm');
+    }
+    // The teacher can lock just some grades (lockedGrades, like [6, 8]).
+    function gradeOpen(locked) {
+      return locked.size() == 0 || !(student(request.auth.uid).grade in locked);
     }
 
     // Boss drawings (pictures uploaded by the teacher, one per boss). Anyone signed in can see them.

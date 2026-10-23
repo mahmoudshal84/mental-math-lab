@@ -1,6 +1,7 @@
 /* Mental Math Lab: site lock
    Watches the teacher's settings and covers the page with a message when the
-   site (or Arcade, on Arcade pages) is closed. The teacher is never locked out.
+   site (or Arcade, on Arcade pages) is closed, or when the teacher locked the student's grade.
+   The teacher is never locked out.
    Use: MML.siteLock.start(user, { arcade: true/false, versus: true/false, onLock(kind), onSettings(s) }) */
 window.MML = window.MML || {};
 MML.siteLock = {
@@ -51,7 +52,8 @@ MML.siteLock = {
     B.settings.watch((s) => {
       MML.siteLock.current = s;
       if (hooks.onSettings) hooks.onSettings(s);
-      const kind = !s.open ? "site" : hooks.arcade && !s.arcadeOpen ? "arcade" : hooks.versus && !s.versusOpen ? "versus" : null;
+      const gradeLocked = (s.lockedGrades || []).includes(+user.profile.grade); // the teacher locked just this student's grade
+      const kind = !s.open || gradeLocked ? "site" : hooks.arcade && !s.arcadeOpen ? "arcade" : hooks.versus && !s.versusOpen ? "versus" : null;
       if (kind) { if (kind !== shownKind) show(kind, s); else box.querySelector("#lockMsg").textContent = kind === "site" ? s.message || "Your teacher will open it during class. Check back then!" : box.querySelector("#lockMsg").textContent; }
       else hide();
     }).catch(() => { });
