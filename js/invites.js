@@ -17,7 +17,7 @@ MML.invites = (function () {
       const here = new URLSearchParams(location.search).get("room") || (MML.versusRoom || "");
       const now = Date.now();
       const list = MML.versusBusy ? [] // no pop-ups in the middle of a race
-        : latest.filter((i) => !dismissed.has(i.id) && now - i.at < EXPIRE_MS && i.code !== here && MML.siteLock.current.versusOpen !== false);
+        : latest.filter((i) => !dismissed.has(i.id) && now - i.at < EXPIRE_MS && i.code !== here && MML.siteLock.current.versusOpen !== false && !MML.siteLock.current.mapOnly);
       // Old invites are tidied away quietly
       latest.filter((i) => now - i.at >= EXPIRE_MS).forEach((i) => { dismissed.add(i.id); B.invites.remove(i.id); });
       if (!box) {

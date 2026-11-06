@@ -90,7 +90,8 @@ MML.help = (function () {
         Some bosses were drawn by students!</p>`],
       ["🔒", "When the site is closed", `
         <p>Your teacher decides when Mental Math Lab is open. If you see a lock screen, check back during class.
-        Your teacher can also close just the Arcade, and you can still play levels.</p>`],
+        Your teacher can also close just the Arcade, and you can still play levels.
+        Sometimes your teacher opens only <b>MAP Practice</b>. Then the lock screen has a button that takes you straight there.</p>`],
     ];
   }
 

@@ -64,7 +64,9 @@ window.MML = window.MML || {};
      ===================================================================== */
   let F = null;
   // Site settings: is the site open, is Arcade open, and the message students see when it's closed
+  // mapOnly: the teacher locked everything except MAP Practice
   const normSettings = (d) => ({ open: !d || d.open !== false, arcadeOpen: !d || d.arcadeOpen !== false, versusOpen: !d || d.versusOpen !== false, message: (d && d.message) || "",
+    mapOnly: !!d && d.mapOnly === true,
     lockedGrades: d && Array.isArray(d.lockedGrades) ? [6, 7, 8].filter((g) => d.lockedGrades.map(Number).includes(g)) : [] });
 
   const fb = {

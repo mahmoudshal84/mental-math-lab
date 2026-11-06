@@ -291,7 +291,7 @@
     }
   }
 
-  /* Site access: lock/unlock the whole site (or just some grades), Arcade, and Versus */
+  /* Site access: lock/unlock the whole site (or just some grades), Arcade, Versus, and everything but MAP Practice */
   function setupAccess() {
     let s = null;
     const gradeList = (gs) => gs.length === 1 ? `grade ${gs[0]}` : gs.length === 2 ? `grades ${gs[0]} and ${gs[1]}` : `grades ${gs.slice(0, -1).join(", ")}, and ${gs[gs.length - 1]}`;
@@ -313,6 +313,10 @@
       $("vsBtn").textContent = s.versusOpen ? "Lock Versus" : "Open Versus";
       $("vsBtn").className = "btn " + (s.versusOpen ? "btn-danger" : "btn-primary");
       $("vsBtn").disabled = false;
+      $("mapState").innerHTML = s.mapOnly ? "MAP only: <b class='shut'>🔒 On</b>" : "MAP only: <b class='open'>Off</b>";
+      $("mapBtn").textContent = s.mapOnly ? "Turn off MAP only" : "Lock all but MAP Practice";
+      $("mapBtn").className = "btn " + (s.mapOnly ? "btn-primary" : "btn-danger");
+      $("mapBtn").disabled = false;
       $("siteBtn").textContent = s.open ? "Lock the whole site" : "Open the site";
       $("arcBtn").textContent = s.arcadeOpen ? "Lock Arcade" : "Open Arcade";
       $("siteBtn").className = "btn " + (s.open ? "btn-danger" : "btn-primary");
@@ -322,8 +326,9 @@
       const warn = $("bossLockWarn");
       if (warn) {
         warn.textContent = !s.open ? "The site is locked, so students can't join a battle. Open the site first."
-          : lg.length ? `The site is locked for ${gradeList(lg)}, so those students can't join a battle.` : "";
-        warn.hidden = s.open && !lg.length;
+          : lg.length ? `The site is locked for ${gradeList(lg)}, so those students can't join a battle.`
+          : s.mapOnly ? "Only MAP Practice is open, so students can't join a battle. Unlock everything else first." : "";
+        warn.hidden = !warn.textContent;
       }
     };
     B.settings.watch((v, err) => { s = v; $("accessErr").textContent = err ? err.message : ""; draw(); })
@@ -344,6 +349,7 @@
     }));
     $("arcBtn").onclick = (e) => s && set({ arcadeOpen: !s.arcadeOpen }, e.currentTarget);
     $("vsBtn").onclick = (e) => s && set({ versusOpen: !s.versusOpen }, e.currentTarget);
+    $("mapBtn").onclick = (e) => s && set({ mapOnly: !s.mapOnly }, e.currentTarget);
     $("lockMsgSave").onclick = async (e) => {
       await set({ message: $("lockMsgIn").value.trim().slice(0, 200) }, e.currentTarget);
       $("lockMsgNote").textContent = " Saved.";

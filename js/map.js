@@ -55,6 +55,7 @@
 
   // If the teacher locks the site, the student's place is already saved
   MML.siteLock.start(user, {
+    map: true, // stays open when the teacher locks everything except MAP Practice
     onLock() { save(); return M.run ? "Your place is saved, so you can pick up where you left off." : ""; },
   });
 

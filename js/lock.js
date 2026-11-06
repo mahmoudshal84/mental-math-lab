@@ -1,17 +1,20 @@
 /* Mental Math Lab: site lock
    Watches the teacher's settings and covers the page with a message when the
    site (or Arcade, on Arcade pages) is closed, or when the teacher locked the student's grade.
+   When the teacher turns on "MAP Practice only", every page except MAP Practice (map: true) is covered.
    The teacher is never locked out.
-   Use: MML.siteLock.start(user, { arcade: true/false, versus: true/false, onLock(kind), onSettings(s) }) */
+   Use: MML.siteLock.start(user, { arcade: true/false, versus: true/false, map: true/false, onLock(kind), onSettings(s) }) */
 window.MML = window.MML || {};
 MML.siteLock = {
-  current: { open: true, arcadeOpen: true, message: "" },
+  current: { open: true, arcadeOpen: true, mapOnly: false, message: "" },
   start(user, hooks = {}) {
     if (!user || user.isAdmin) return;
     const B = MML.backend;
     if (B.people) B.people.heartbeat(user); // keeps the "Online now" dot on the Friends page up to date
     if (MML.invites) MML.invites.start(user); // Versus invites pop up on pages that load js/invites.js
-    const closedText = { site: "", arcade: "Your teacher has closed Arcade for now. You can still play levels.", versus: "Your teacher has closed Versus for now. You can still play levels." };
+    const closedText = { site: "", arcade: "Your teacher has closed Arcade for now. You can still play levels.", versus: "Your teacher has closed Versus for now. You can still play levels.",
+      map: "Your teacher has opened just MAP Practice for now. Everything else will be back later." };
+    const titles = { site: "Mental Math Lab is closed right now", arcade: "Arcade is closed right now", versus: "Versus is closed right now", map: "Only MAP Practice is open right now" };
     let box = null, shownKind = null;
 
     function show(kind, s) {
@@ -21,12 +24,13 @@ MML.siteLock = {
         box.className = "overlay lock-screen";
         box.setAttribute("role", "alertdialog");
         box.setAttribute("aria-labelledby", "lockTitle");
-        box.innerHTML = `<div class="card"><div class="lock-icon" aria-hidden="true">🔒</div>
+        box.innerHTML = `<div class="card"><div class="lock-icon" id="lockIcon" aria-hidden="true">🔒</div>
           <h1 id="lockTitle"></h1><p id="lockMsg"></p><p class="note" id="lockNote" hidden></p>
           <div class="actions" id="lockActions"></div></div>`;
         document.body.appendChild(box);
       }
-      box.querySelector("#lockTitle").textContent = kind === "site" ? "Mental Math Lab is closed right now" : kind === "versus" ? "Versus is closed right now" : "Arcade is closed right now";
+      box.querySelector("#lockIcon").textContent = kind === "map" ? "🎯" : "🔒";
+      box.querySelector("#lockTitle").textContent = titles[kind];
       box.querySelector("#lockMsg").textContent = kind === "site"
         ? s.message || "Your teacher will open it during class. Check back then!"
         : closedText[kind];
@@ -34,7 +38,12 @@ MML.siteLock = {
       n.textContent = note || ""; n.hidden = !note;
       const acts = box.querySelector("#lockActions");
       acts.innerHTML = "";
-      if (kind === "site") {
+      if (kind === "map") {
+        const a = document.createElement("a");
+        a.className = "btn btn-primary"; a.href = "map.html"; a.textContent = "Go to MAP Practice";
+        acts.appendChild(a);
+      }
+      if (kind === "site" || kind === "map") {
         const b = document.createElement("button");
         b.type = "button"; b.className = "btn btn-ghost"; b.textContent = "Log out";
         b.onclick = async () => { await B.logout(); location.href = "index.html"; };
@@ -53,7 +62,7 @@ MML.siteLock = {
       MML.siteLock.current = s;
       if (hooks.onSettings) hooks.onSettings(s);
       const gradeLocked = (s.lockedGrades || []).includes(+user.profile.grade); // the teacher locked just this student's grade
-      const kind = !s.open || gradeLocked ? "site" : hooks.arcade && !s.arcadeOpen ? "arcade" : hooks.versus && !s.versusOpen ? "versus" : null;
+      const kind = !s.open || gradeLocked ? "site" : s.mapOnly && !hooks.map ? "map" : hooks.arcade && !s.arcadeOpen ? "arcade" : hooks.versus && !s.versusOpen ? "versus" : null;
       if (kind) { if (kind !== shownKind) show(kind, s); else box.querySelector("#lockMsg").textContent = kind === "site" ? s.message || "Your teacher will open it during class. Check back then!" : box.querySelector("#lockMsg").textContent; }
       else hide();
     }).catch(() => { });
