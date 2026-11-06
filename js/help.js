@@ -77,6 +77,7 @@ MML.help = (function () {
         <p>MAP Practice gets you ready for the MAP Growth test. Each run is 42 questions, in 7 stages that start easy and get harder.</p>
         <ul><li><b>No timer:</b> take your time and use scratch paper.</li>
         <li><b>Miss one?</b> You'll see how to solve it step by step, then get a similar question with new numbers. Get it right to move on.</li>
+        <li><b>Not sure how to do it?</b> Click <b>I don't know</b> instead of guessing. You'll see how to solve it, then get a similar question. It counts as 1 wrong attempt, the same as a wrong guess.</li>
         <li><b>3 misses</b> on the same question shows you the worked answer, and then you move on.</li>
         <li><b>Coins:</b> 2 for each question you get right on the first try, plus 30 for finishing.</li></ul>
         <p>Your score is your number of wrong attempts, so fewer is better. Your best finished run shows on the home page, and your teacher can see it too.

@@ -2,6 +2,7 @@
    42 untimed multiple-choice questions from all 8 topics, getting harder in 7 stages.
    A miss shows a worked explanation, then a similar ("twin") question. The student moves on
    after getting it right, or after 3 misses on the same question.
+   "I don't know" shows the same explanation and counts as 1 wrong attempt, like a miss.
    Saved in progress/{uid}.map:
      best      fewest wrong attempts in a finished run (null until one is finished)
      bestAt    when that best was set
@@ -97,6 +98,14 @@
 
   /* ---------- The question screen ---------- */
   let selected = null, busy = false;
+  // The "I don't know" button. If a browser still has the old map.html saved, add the button here.
+  let idkBtn = $("idkBtn");
+  if (!idkBtn) {
+    idkBtn = document.createElement("button");
+    idkBtn.type = "button"; idkBtn.className = "btn btn-ghost"; idkBtn.id = "idkBtn";
+    idkBtn.title = "See how to solve it. Counts as 1 wrong attempt."; idkBtn.textContent = "I don't know";
+    $("checkBtn").after(idkBtn);
+  }
   function showQuestion() {
     const r = M.run, q = r.cur;
     view("runView");
@@ -127,6 +136,7 @@
     $("qFb").textContent = ""; $("qFb").className = "map-fb";
     $("checkBtn").disabled = true;
     $("checkBtn").hidden = false;
+    idkBtn.hidden = false; idkBtn.disabled = false;
     $("explain").hidden = true;
     // Coming back to a question they already missed: show the explanation again
     if (r.phase === "explain" || r.phase === "maxed") { lockChoices(null); showExplain(); }
@@ -146,6 +156,7 @@
       else if (k === picked) b.classList.add("wrong");
     });
     $("checkBtn").hidden = true;
+    idkBtn.hidden = true;
   }
 
   $("checkBtn").onclick = check;
@@ -157,25 +168,35 @@
     if (ok) {
       const firstTry = r.tries === 0;
       [...$("qChoices").children].forEach((b, k) => { b.disabled = true; if (k === selected) b.classList.add("right"); });
-      $("checkBtn").hidden = true;
+      $("checkBtn").hidden = true; idkBtn.hidden = true;
       if (firstTry) { r.first++; r.coins += COINS_FIRST_TRY; prog.coins += COINS_FIRST_TRY; }
       $("qFb").textContent = firstTry ? `Correct! +${COINS_FIRST_TRY} coins` : "You got it! On to the next question.";
       $("qFb").className = "map-fb good";
       finishQuestion(firstTry ? 1 : 2);
       setTimeout(next, firstTry ? 900 : 1400);
     } else {
-      r.wrong++; r.tries++;
-      r.phase = r.tries >= MAX_TRIES ? "maxed" : "explain";
-      $("qWrong").textContent = `Wrong attempts: ${r.wrong}`;
-      lockChoices(selected);
-      save();
-      showExplain();
+      miss(selected, false);
       busy = false;
     }
   }
+  // "I don't know": see the explanation without guessing. Counts as 1 wrong attempt, like a miss.
+  idkBtn.onclick = idk;
+  function idk() {
+    if (busy || !M.run || M.run.phase !== "ask") return;
+    miss(null, true);
+  }
+  function miss(picked, idk) {
+    const r = M.run;
+    r.wrong++; r.tries++; r.idk = idk;
+    r.phase = r.tries >= MAX_TRIES ? "maxed" : "explain";
+    $("qWrong").textContent = `Wrong attempts: ${r.wrong}`;
+    lockChoices(picked);
+    save();
+    showExplain();
+  }
   function showExplain() {
     const r = M.run, q = r.cur, maxed = r.phase === "maxed";
-    $("exTitle").textContent = maxed ? "Here's the worked answer" : "Not quite. Here's how to solve it";
+    $("exTitle").textContent = maxed ? "Here's the worked answer" : r.idk ? "No problem. Here's how to solve it" : "Not quite. Here's how to solve it";
     const ol = $("exSteps"); ol.innerHTML = "";
     for (const s of q.steps) { const li = document.createElement("li"); li.textContent = s; ol.appendChild(li); }
     const a = $("exAnswer"); a.textContent = "So the answer is ";
@@ -193,7 +214,7 @@
     if (r.phase === "maxed") { finishQuestion(3); next(); return; }
     if (r.phase !== "explain") return;
     r.cur = MQ.twin(r.cur);
-    r.phase = "ask";
+    r.phase = "ask"; r.idk = false;
     save();
     showQuestion();
   }
@@ -203,7 +224,7 @@
     const r = M.run, t = r.cur.topic, tp = (r.topics[t] = r.topics[t] || { r: 0, n: 0 });
     tp.n++; if (mark === 1) tp.r++;
     r.marks.push(mark);
-    r.i++; r.tries = 0; r.phase = "ask";
+    r.i++; r.tries = 0; r.phase = "ask"; r.idk = false;
     if (r.i >= TOTAL) return finishRun();
     r.cur = makeQuestion(r.i);
     save();
@@ -281,6 +302,7 @@
     if (!r) return;
     const k = e.key.toLowerCase(), idx = "1234".indexOf(k) >= 0 ? "1234".indexOf(k) : "abcd".indexOf(k);
     if (r.phase === "ask" && idx >= 0 && k.length === 1) { choose(idx); return; }
+    if (r.phase === "ask" && e.key === "?") { e.preventDefault(); idk(); return; }
     if (e.key === "Enter" && !e.repeat) {
       const onChoice = e.target && e.target.classList && e.target.classList.contains("map-choice");
       if (e.target && e.target.tagName === "BUTTON" && !onChoice) return; // Check / Next buttons handle Enter themselves
