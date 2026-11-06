@@ -40,7 +40,8 @@
 .map-wrap { max-width: 920px; }
 .map-mark { font-size: clamp(2rem, 5vw, 3rem); }
 .map-page .top { margin-bottom: 24px; }
-.map-start, .map-end { max-width: 660px; }
+/* Same width as the header and the question card; long text lines stay readable */
+.map-start .map-rules, .map-start .note, .map-confirm p { max-width: 70ch; }
 .map-rules { padding-left: 20px; margin: 12px 0 18px; }
 .map-rules li { margin-bottom: 8px; }
 .map-start-best { font-weight: 700; margin: 0 0 16px; }
