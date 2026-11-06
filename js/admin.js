@@ -79,8 +79,9 @@
     if (!list.length) { body.innerHTML = "<tr><td colspan='9'>No students yet. Add some above.</td></tr>"; return; }
     for (const s of list) {
       const tr = document.createElement("tr");
-            [s.displayName, s.username, s.grade, s.password, typeof s.mapBest === "number" ? s.mapBest : "No finished run", s.stars, s.xp, s.coins, ago(s.lastActive)].forEach((v) => {
+            [s.displayName, s.username, s.grade, s.password, typeof s.mapBest === "number" ? s.mapBest : "No finished run", s.stars, s.xp, s.coins, ago(s.lastActive)].forEach((v, k) => {
         const td = document.createElement("td"); td.textContent = v; tr.appendChild(td);
+        if (k === 4) mapHistoryCell(td, s, tr);
       });
       const cell = document.createElement("td"), acts = document.createElement("div");
       acts.className = "acts"; cell.appendChild(acts);
@@ -96,6 +97,49 @@
       tr.appendChild(cell);
       body.appendChild(tr);
     }
+  }
+
+  /* MAP Practice history: a "History" button under the best score opens a row with every finished run */
+  const mapOpen = new Set(); // students whose history is open, kept open when the table redraws
+  function mapHistoryCell(td, s, tr) {
+    const h = s.mapHistory || [];
+    if (!h.length) return;
+    td.classList.add("map-cell");
+    const trend = document.createElement("div"); trend.className = "map-trend";
+    const recent = h.slice(-4).map((x) => x.wrong);
+    trend.textContent = h.length === 1 ? "1 finished run" : `Last runs: ${recent.join(" → ")}`;
+    trend.title = "Wrong attempts in each finished run, oldest to newest. Fewer is better.";
+    const b = document.createElement("button"); b.type = "button"; b.className = "mini"; b.textContent = "History";
+    b.setAttribute("aria-expanded", "false");
+    td.append(trend, b);
+    let row = null;
+    const toggle = () => {
+      if (row) { row.remove(); row = null; mapOpen.delete(s.uid); b.setAttribute("aria-expanded", "false"); b.textContent = "History"; return; }
+      mapOpen.add(s.uid); b.setAttribute("aria-expanded", "true"); b.textContent = "Hide history";
+      row = document.createElement("tr"); row.className = "map-history-row";
+      const cell = document.createElement("td"); cell.colSpan = 10; row.appendChild(cell);
+      const head = document.createElement("p");
+      const first = h[0].wrong, last = h[h.length - 1].wrong, d = first - last;
+      head.innerHTML = `<b></b> MAP Practice: ${h.length} finished run${h.length === 1 ? "" : "s"}, best <b>${s.mapBest}</b>.`
+        + (h.length > 1 ? ` ${d > 0 ? `${d} fewer wrong attempt${d === 1 ? "" : "s"} than their first run.` : d === 0 ? "Same as their first run." : `${-d} more wrong attempt${d === -1 ? "" : "s"} than their first run.`}` : "");
+      head.firstChild.textContent = s.displayName + "'s";
+      const tbl = document.createElement("table"); tbl.className = "map-history-table";
+      tbl.innerHTML = "<thead><tr><th>Run</th><th>Finished</th><th>Wrong attempts</th><th>Right on the first try</th></tr></thead>";
+      const tb = document.createElement("tbody");
+      h.slice().reverse().forEach((x, i) => {
+        const r = document.createElement("tr");
+        const when = x.at ? new Date(x.at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "Earlier";
+        [h.length - i, when, x.wrong + (x.wrong === s.mapBest ? " ★" : ""), typeof x.first === "number" ? `${x.first} of 42` : "Not saved"].forEach((v) => {
+          const c = document.createElement("td"); c.textContent = v; r.appendChild(c);
+        });
+        tb.appendChild(r);
+      });
+      tbl.appendChild(tb);
+      cell.append(head, tbl);
+      tr.after(row);
+    };
+    b.onclick = toggle;
+    if (mapOpen.has(s.uid)) setTimeout(toggle); // reopen after the table redraws
   }
 
   async function run(button, fn, done) {

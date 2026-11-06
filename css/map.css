@@ -122,3 +122,16 @@
 .map-bar { height: 10px; background: #e2e5f7; border-radius: 5px; overflow: hidden; }
 .map-bar i { display: block; height: 100%; background: var(--cobalt); border-radius: 5px; }
 .map-tip { background: #e8ebff; border-left: 5px solid var(--cobalt); padding: 10px 14px; border-radius: 6px; margin: 0 0 20px; }
+
+/* Start screen: "Are you sure?" before starting over, and past runs */
+.map-confirm { background: #ffe3ec; border-left: 6px solid var(--pink); border-radius: var(--radius-sm); padding: 14px 18px 16px; margin: 4px 0 8px; }
+.map-confirm p { margin: 0 0 6px; }
+.map-confirm-q { font-weight: 700; font-size: 1.15rem; }
+.map-confirm .actions { margin-top: 12px; }
+.map-history { margin-top: 22px; }
+.map-history h3 { margin: 0 0 4px; }
+.map-history .note { margin: 0 0 8px; }
+.map-runs li { grid-template-columns: minmax(130px, 170px) 1fr minmax(5.5em, auto); }
+.map-runs b { text-align: right; }
+.map-runs .star { color: #b88600; }
+.map-end-when { margin: -4px 0 10px; font-weight: 600; opacity: 0.75; }

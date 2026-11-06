@@ -7,11 +7,21 @@
      best      fewest wrong attempts in a finished run (null until one is finished)
      bestAt    when that best was set
      finished  number of finished runs
-     last      { wrong, first, coins, at } for the most recent finished run
+     last      the most recent finished run: { wrong, first, coins, topics, isBest, prevBest, at },
+               so "View last analysis" can show its results screen again (older saves have no topics)
+     history   every finished run, oldest first: [{ wrong, first, at }] (at most 100)
      run       the run in progress (null when there isn't one), saved after every answer */
 (async function () {
-  const B = MML.backend, MQ = MML.mapQuestions;
+  const B = MML.backend, MQ = MML.mapQuestions, PR = MML.progress;
   const $ = (id) => document.getElementById(id);
+  // Right after an update, a browser can mix an old saved map.html (or progress.js) with this file.
+  // If so, load the page once more so everything is the new version.
+  if (!$("restartAsk") || !PR.mapHistory) {
+    const u = new URL(location.href);
+    if (!u.searchParams.has("fresh")) { u.searchParams.set("fresh", Date.now()); location.replace(u.href); }
+    else $("loading").textContent = "MAP Practice was just updated. Please refresh this page (Ctrl+Shift+R).";
+    return;
+  }
   const COINS_FIRST_TRY = 2, FINISH_BONUS = 30, MAX_TRIES = 3;
   const TOTAL = MQ.TOTAL, STAGES = MQ.STAGES, PER_STAGE = MQ.PER_STAGE;
   const STAGE_COLORS = ["#ff4f8b", "#ff8a3d", "#ffd23f", "#2ee6a6", "#3fb6ff", "#7b6bff", "#c36bff"];
@@ -35,6 +45,7 @@
       bestAt: m.bestAt || null,
       finished: m.finished || 0,
       last: m.last || null,
+      history: PR.mapHistory(m),
       run: runOk ? r : null,
     };
   }
@@ -75,14 +86,63 @@
     const r = M.run;
     $("startBtn").textContent = r ? `Continue: question ${r.i + 1} of ${TOTAL}` : "Start MAP Practice";
     $("startOver").hidden = !r;
+    $("lastBtn").hidden = !M.last;
+    askRestart(false);
+    drawHistory();
     $("startBtn").focus();
   }
   $("startBtn").onclick = () => (M.run ? showQuestion() : newRun());
-  $("startOver").onclick = () => {
-    if (!confirm("Start a new run? Your unfinished run will be erased. Only finished runs count toward your best.")) return;
-    newRun();
-  };
   $("againBtn").onclick = newRun;
+  $("lastBtn").onclick = () => M.last && showEnd(M.last, true);
+  $("endBack").onclick = showStart;
+
+  // "Start over" asks first: Yes starts a new run, No goes back
+  function askRestart(on) {
+    $("restartAsk").hidden = !on;
+    $("startActions").hidden = on;
+    if (on) {
+      $("restartWhy").textContent = `You're on question ${M.run.i + 1} of ${TOTAL}. Starting over erases this run and starts again at question 1. Only finished runs count toward your best.`;
+      $("restartNo").focus();
+    }
+  }
+  $("startOver").onclick = () => M.run && askRestart(true);
+  $("restartNo").onclick = () => { askRestart(false); $("startOver").focus(); };
+  $("restartYes").onclick = () => { askRestart(false); newRun(); };
+  $("restartAsk").addEventListener("keydown", (e) => { if (e.key === "Escape") $("restartNo").click(); });
+
+  /* ---------- Past runs on the start screen ---------- */
+  const day = (at) => {
+    if (!at) return "Earlier";
+    const d = new Date(at), opts = { month: "short", day: "numeric" };
+    if (d.getFullYear() !== new Date().getFullYear()) opts.year = "numeric";
+    return d.toLocaleDateString(undefined, opts);
+  };
+  function drawHistory() {
+    const h = M.history, list = $("historyList");
+    $("history").hidden = !h.length;
+    list.innerHTML = "";
+    if (!h.length) return;
+    const most = Math.max(...h.map((x) => x.wrong), 1);
+    h.slice(-10).reverse().forEach((x) => {
+      const li = document.createElement("li");
+      const nm = document.createElement("span"); nm.textContent = day(x.at);
+      const bar = document.createElement("span"); bar.className = "map-bar"; bar.setAttribute("aria-hidden", "true");
+      const fill = document.createElement("i"); fill.style.width = Math.max(2, Math.round((x.wrong / most) * 100)) + "%"; bar.appendChild(fill);
+      const ct = document.createElement("b"); ct.textContent = x.wrong;
+      if (x.wrong === M.best) { const st = document.createElement("span"); st.className = "star"; st.textContent = " ★"; st.title = "Your best"; ct.appendChild(st); }
+      li.append(nm, bar, ct);
+      li.setAttribute("aria-label", `${day(x.at)}: ${plural(x.wrong, "wrong attempt")}${x.wrong === M.best ? ", your best" : ""}`);
+      list.appendChild(li);
+    });
+    const tip = $("historyTip");
+    if (h.length >= 2) {
+      const a = h[h.length - 2].wrong, b = h[h.length - 1].wrong, d = a - b;
+      tip.textContent = d > 0 ? `Your last run had ${plural(d, "fewer wrong attempt")} than the one before. Nice work!`
+        : d === 0 ? "Your last two runs had the same number of wrong attempts. Can you beat it next time?"
+        : `Your last run had ${d === -1 ? "1 more wrong attempt" : `${-d} more wrong attempts`} than the one before. Read the explanations closely and try again!`;
+      tip.hidden = false;
+    } else tip.hidden = true;
+  }
 
   function newRun() {
     const plan = MQ.plan().map(([t, s]) => `${t}:${s}`); // strings, because Firestore can't store arrays inside arrays
@@ -238,23 +298,37 @@
     r.coins += FINISH_BONUS; prog.coins += FINISH_BONUS;
     if (isBest) { M.best = r.wrong; M.bestAt = Date.now(); }
     M.finished++;
-    M.last = { wrong: r.wrong, first: r.first, coins: r.coins, at: Date.now() };
-    result = { wrong: r.wrong, first: r.first, coins: r.coins, topics: r.topics, isBest, prevBest };
+    const at = Date.now();
+    M.last = { wrong: r.wrong, first: r.first, coins: r.coins, topics: r.topics, isBest, prevBest, at };
+    M.history = [...M.history, { wrong: r.wrong, first: r.first, at }].slice(-PR.MAP_HISTORY_MAX);
+    result = M.last;
     M.run = null;
     save();
   }
-  function showEnd() {
+  // review = true when a student opens "View last analysis" from the start screen
+  function showEnd(res = result, review = false) {
     view("endView");
-    const res = result;
+    $("h-end").textContent = review ? "Your last MAP Practice run" : "MAP Practice complete!";
+    $("endWhen").textContent = review && res.at ? `Finished ${day(res.at)}` : "";
+    $("endWhen").hidden = !$("endWhen").textContent;
+    $("againBtn").hidden = review; $("endBack").hidden = !review;
     $("endWrong").textContent = res.wrong;
     $("endWrongLabel").textContent = res.wrong === 1 ? "wrong attempt" : "wrong attempts";
-    $("endBest").textContent = res.isBest
+    $("endBest").textContent = res.isBest === undefined ? `Your best is ${M.best}. Fewer wrong attempts is better.` // older saves
+      : res.isBest
       ? (res.prevBest === null ? "That's your first finished run, so it's your best so far!" : `New best! Your old best was ${res.prevBest}.`)
       : `Your best is still ${M.best}. Fewer wrong attempts is better.`;
     $("endBest").className = "map-end-best" + (res.isBest ? " new" : "");
     $("endFirst").textContent = `${res.first} of ${TOTAL}`;
     $("endCoins").textContent = `+${res.coins}`;
     const list = $("endTopics"); list.innerHTML = "";
+    // Runs finished before Nov 2026 didn't save the topic breakdown
+    $("endTopicsHead").hidden = list.hidden = !res.topics;
+    if (!res.topics) {
+      $("endTip").textContent = "The topic breakdown wasn't saved for this run. Finish a new run to see it here.";
+      (review ? $("endBack") : $("againBtn")).focus();
+      return;
+    }
     let weakest = null;
     for (const t of MQ.ORDER) {
       const tp = res.topics[t] || { r: 0, n: 0 };
@@ -274,7 +348,7 @@
       ? `Your trickiest topic this run was ${MQ.LABELS[weakest.t]}. ` + (MML.problems && MML.problems.strands && MML.problems.strands[weakest.t]
         ? "Practicing it in the games will help." : "Read the worked explanations closely when you miss one.")
       : "Every topic right on the first try. Amazing!";
-    $("againBtn").focus();
+    (review ? $("endBack") : $("againBtn")).focus();
   }
 
   /* ---------- Progress track: 7 stages of 6 ---------- */

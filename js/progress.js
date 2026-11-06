@@ -169,8 +169,22 @@ window.MML = window.MML || {};
     return `${w} win${w === 1 ? "" : "s"}, ${l} loss${l === 1 ? "" : "es"}`;
   }
 
+  /* MAP Practice history: every finished run, oldest first, as { wrong, first, at }.
+     Runs finished before history was saved (Nov 2026) are filled in from "last" and "best". */
+  const MAP_HISTORY_MAX = 100;
+  function mapHistory(m) {
+    if (!m || typeof m !== "object") return [];
+    if (Array.isArray(m.history)) return m.history.filter((h) => h && typeof h.wrong === "number").slice(-MAP_HISTORY_MAX);
+    const out = [];
+    const L = m.last;
+    if (L && typeof L.wrong === "number") out.push({ wrong: L.wrong, first: typeof L.first === "number" ? L.first : null, at: L.at || 0 });
+    const sameAsLast = L && L.wrong === m.best && Math.abs((L.at || 0) - (m.bestAt || 0)) < 60000;
+    if (typeof m.best === "number" && m.bestAt && !sameAsLast) out.push({ wrong: m.best, first: null, at: m.bestAt });
+    return out.sort((a, b) => a.at - b.at);
+  }
+
   MML.progress = {
-    versusText,
+    versusText, mapHistory, MAP_HISTORY_MAX,
     STAR_MIN, FREE_MISSES, IMPROVE_MIN, fresh, normalize, weekId, prevWeekId, week, improvement,
     starKey, starsFor, starMin, unlocked, totalStars, nextProblem, record, finishLevel, finishArcade, weekArcade, boardEntries, starXp,
   };

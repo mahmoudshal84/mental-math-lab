@@ -872,3 +872,10 @@ body.in-race { overflow-x: hidden; }
 }
 
 @media (prefers-reduced-motion: reduce) { .arcade, .versus-card, .boss-card { animation: none; } }
+
+/* Admin: MAP Practice history in the student table */
+.map-cell .map-trend { font-size: 0.8rem; opacity: 0.75; margin: 2px 0 4px; white-space: nowrap; }
+.map-history-row > td { background: #eef0ff; padding: 10px 16px 14px; }
+.map-history-row p { margin: 0 0 8px; }
+.map-history-table { border-collapse: collapse; font-size: 0.9rem; background: #fff; }
+.map-history-table th, .map-history-table td { border: 1px solid #c9cef0; padding: 4px 12px; text-align: left; }

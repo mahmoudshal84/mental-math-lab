@@ -36,9 +36,24 @@
           <li><b>Coins:</b> 2 for each question right on the first try, plus 30 for finishing.</li>
         </ul>
         <p class="map-start-best" id="startBest"></p>
-        <div class="actions">
+        <div class="actions" id="startActions">
           <button class="btn btn-primary" id="startBtn" type="button">Start MAP Practice</button>
           <button class="btn btn-ghost" id="startOver" type="button" hidden>Start over</button>
+          <button class="btn btn-ghost" id="lastBtn" type="button" hidden>View last analysis</button>
+        </div>
+        <div class="map-confirm" id="restartAsk" role="alertdialog" aria-labelledby="restartQ" aria-describedby="restartWhy" hidden>
+          <p class="map-confirm-q" id="restartQ">Are you sure you want to restart?</p>
+          <p id="restartWhy"></p>
+          <div class="actions">
+            <button class="btn btn-danger" id="restartYes" type="button">Yes, start over</button>
+            <button class="btn btn-primary" id="restartNo" type="button">No, keep going</button>
+          </div>
+        </div>
+        <div class="map-history" id="history" hidden>
+          <h3>Your past runs</h3>
+          <p class="note">Wrong attempts in each finished run, newest first. Fewer is better.</p>
+          <ul class="map-topics map-runs" id="historyList"></ul>
+          <p class="map-tip" id="historyTip" hidden></p>
         </div>
         <p class="note">Your place saves after every answer, so you can finish next class.</p>
       </section>
@@ -85,6 +100,7 @@
       <!-- Results -->
       <section class="panel map-end" id="endView" aria-labelledby="h-end" hidden>
         <h2 id="h-end">MAP Practice complete!</h2>
+        <p class="map-end-when" id="endWhen" hidden></p>
         <div class="map-end-score">
           <strong id="endWrong">0</strong>
           <span id="endWrongLabel">wrong attempts</span>
@@ -94,11 +110,12 @@
           <div><b id="endFirst"></b><span>right on the first try</span></div>
           <div><b id="endCoins"></b><span>coins earned</span></div>
         </div>
-        <h3>First-try answers by topic</h3>
+        <h3 id="endTopicsHead">First-try answers by topic</h3>
         <ul class="map-topics" id="endTopics"></ul>
         <p class="map-tip" id="endTip"></p>
         <div class="actions">
           <button class="btn btn-primary" id="againBtn" type="button">Start a new run</button>
+          <button class="btn btn-primary" id="endBack" type="button" hidden>Back to MAP Practice</button>
           <a class="btn btn-ghost" href="index.html">Back to games</a>
         </div>
       </section>
@@ -109,11 +126,11 @@
   <script src="js/games.js"></script>
   <script src="js/problems.js"></script>
   <script src="js/avatar.js"></script>
-  <script src="js/progress.js"></script>
-  <script src="js/backend.js"></script>
+  <script src="js/progress.js?v=20261106"></script>
+  <script src="js/backend.js?v=20261106"></script>
   <script src="js/lock.js"></script>
   <script src="js/help.js"></script>
   <script src="js/map-questions.js"></script>
-  <script src="js/map.js"></script>
+  <script src="js/map.js?v=20261106"></script>
 </body>
 </html>

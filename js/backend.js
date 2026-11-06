@@ -478,6 +478,7 @@ window.MML = window.MML || {};
       uid, username: s.username, displayName: s.displayName, grade: s.grade, password: password || "",
             xp: pr.xp, coins: pr.coins, stars: PR.totalStars(pr), lastActive: pr.lastActive,
       mapBest: pr.map && typeof pr.map.best === "number" ? pr.map.best : null,
+      mapHistory: PR.mapHistory ? PR.mapHistory(pr.map) : [],
     };
   }
 
