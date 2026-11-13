@@ -1,15 +1,22 @@
 /* Mental Math Lab: MAP Practice
    42 untimed multiple-choice questions from all 8 topics, getting harder in 7 stages.
    A miss shows a worked explanation, then a similar ("twin") question. The student moves on
-   after getting it right, or after 3 misses on the same question.
+   only after getting one right (no skipping after 3 misses, Nov 2026). From the 3rd miss on,
+   the last worked example stays on screen next to the new question.
    "I don't know" shows the same explanation and counts as 1 wrong attempt, like a miss.
+   Guessing: a wrong answer (or "I don't know") given faster than a reasonable reading time is a
+   "fast guess". The explanation's button waits a few seconds; 2 fast guesses in a row show a
+   "slow down" note and make Check wait; 3 fast guesses within 5 questions add a flag the
+   teacher sees on the admin page.
    Saved in progress/{uid}.map:
      best      fewest wrong attempts in a finished run (null until one is finished)
      bestAt    when that best was set
      finished  number of finished runs
      last      the most recent finished run: { wrong, first, coins, topics, isBest, prevBest, at },
                so "View last analysis" can show its results screen again (older saves have no topics)
-     history   every finished run, oldest first: [{ wrong, first, at }] (at most 100)
+     history   every finished run, oldest first: [{ wrong, first, at, fast }] (at most 100; fast since Nov 13, 2026)
+     flags     possible-guessing flags for the teacher: [{ at, q, n }] (question number, fast guesses
+               in the last 5 questions), at most 30, at most one every 10 minutes
      run       the run in progress (null when there isn't one), saved after every answer */
 (async function () {
   const B = MML.backend, MQ = MML.mapQuestions, PR = MML.progress;
@@ -22,7 +29,13 @@
     else $("loading").textContent = "MAP Practice was just updated. Please refresh this page (Ctrl+Shift+R).";
     return;
   }
-  const COINS_FIRST_TRY = 2, FINISH_BONUS = 30, MAX_TRIES = 3;
+  const COINS_FIRST_TRY = 2, FINISH_BONUS = 30, HELP_AT = 3; // from the 3rd miss on, the last worked example stays on screen
+  // Guessing checks
+  const READ_WAIT = 5000;   // after a miss, "Try a similar question" waits this long so the steps get read
+  const CALM_WAIT = 10000;  // after 2 fast guesses in a row, Check waits this long
+  const FAST_ROW = 2, FLAG_N = 3, FLAG_WITHIN = 5, FLAG_GAP = 10 * 60000, FLAGS_MAX = 30;
+  // The shortest believable time to read a question before answering it wrong
+  const minRead = (q) => Math.min(11000, Math.max(4000, 2500 + q.prompt.length * 35 + (q.figure ? 2000 : 0)));
   const TOTAL = MQ.TOTAL, STAGES = MQ.STAGES, PER_STAGE = MQ.PER_STAGE;
   const STAGE_COLORS = ["#ff4f8b", "#ff8a3d", "#ffd23f", "#2ee6a6", "#3fb6ff", "#7b6bff", "#c36bff"];
   const LETTERS = ["A", "B", "C", "D"];
@@ -46,8 +59,17 @@
       finished: m.finished || 0,
       last: m.last || null,
       history: PR.mapHistory(m),
-      run: runOk ? r : null,
+      flags: Array.isArray(m.flags) ? m.flags.filter((f) => f && typeof f.at === "number").slice(-FLAGS_MAX) : [],
+      run: runOk ? fixRun(r) : null,
     };
+  }
+  // Runs saved before Nov 13, 2026 could be sitting on a "3 tries, move on" screen: show the explanation instead
+  function fixRun(r) {
+    if (r.phase === "maxed") r.phase = "explain";
+    if (r.phase !== "ask" && r.phase !== "explain") r.phase = "ask";
+    r.fast = r.fast || 0; r.fastRow = r.fastRow || 0;
+    r.fastQs = Array.isArray(r.fastQs) ? r.fastQs : [];
+    return r;
   }
 
   /* ---------- Saving: one save at a time; changes made during a save go out right after ---------- */
@@ -146,7 +168,8 @@
 
   function newRun() {
     const plan = MQ.plan().map(([t, s]) => `${t}:${s}`); // strings, because Firestore can't store arrays inside arrays
-    M.run = { id: Date.now(), plan, i: 0, wrong: 0, first: 0, coins: 0, tries: 0, phase: "ask", marks: [], topics: {}, cur: null };
+    M.run = { id: Date.now(), plan, i: 0, wrong: 0, first: 0, coins: 0, tries: 0, phase: "ask", marks: [], topics: {}, cur: null,
+      fast: 0, fastRow: 0, fastQs: [] };
     M.run.cur = makeQuestion(0);
     save();
     showQuestion();
@@ -166,6 +189,20 @@
     idkBtn.title = "See how to solve it. Counts as 1 wrong attempt."; idkBtn.textContent = "I don't know";
     $("checkBtn").after(idkBtn);
   }
+  // The worked example kept on screen from the 3rd miss on, and the "slow down" note (made here if map.html is old)
+  let exBox = $("qExample");
+  if (!exBox) {
+    exBox = document.createElement("div"); exBox.className = "map-example"; exBox.id = "qExample"; exBox.hidden = true;
+    exBox.innerHTML = `<h3>Stuck? Here's the last question, solved. Use the same steps.</h3><p class="map-example-q"></p><div class="map-example-fig"></div><ol></ol><p class="map-answer"></p>`;
+    $("qChoices").before(exBox);
+  }
+  let calmNote = $("qCalm");
+  if (!calmNote) {
+    calmNote = document.createElement("p"); calmNote.className = "map-calm"; calmNote.id = "qCalm"; calmNote.hidden = true;
+    calmNote.setAttribute("role", "status");
+    $("qPrompt").before(calmNote);
+  }
+  let shownAt = 0, readUntil = 0, waitTimer = 0;
   function showQuestion() {
     const r = M.run, q = r.cur;
     view("runView");
@@ -198,15 +235,53 @@
     $("checkBtn").hidden = false;
     idkBtn.hidden = false; idkBtn.disabled = false;
     $("explain").hidden = true;
+    showExample();
     // Coming back to a question they already missed: show the explanation again
-    if (r.phase === "explain" || r.phase === "maxed") { lockChoices(null); showExplain(); }
-    else $("qPrompt").focus();
+    if (r.phase === "explain") { calmNote.hidden = true; lockChoices(null); showExplain(); return; }
+    shownAt = performance.now();
+    if (r.calm) { r.calm = false; r.calmUntil = Date.now() + CALM_WAIT; save(); }
+    calmNote.textContent = "Slow down and work it out. Your teacher can see rushed answers.";
+    calmNote.hidden = !(r.calmUntil > Date.now());
+    tickWaits();
+    $("qPrompt").focus();
+  }
+  // From the 3rd miss on, the last question's worked example stays above the choices
+  function showExample() {
+    const ex = M.run.ex;
+    exBox.hidden = !ex || M.run.phase !== "ask";
+    if (exBox.hidden) return;
+    exBox.querySelector(".map-example-q").textContent = ex.prompt;
+    const fig = exBox.querySelector(".map-example-fig");
+    fig.innerHTML = ex.figure || ""; fig.hidden = !ex.figure;
+    const ol = exBox.querySelector("ol"); ol.innerHTML = "";
+    for (const s of ex.steps) { const li = document.createElement("li"); li.textContent = s; ol.appendChild(li); }
+    const a = exBox.querySelector(".map-answer"); a.textContent = "So the answer was ";
+    const b = document.createElement("b"); b.textContent = ex.answer; a.append(b, ".");
+  }
+  // Countdowns on the buttons: Check after fast guesses, "Try a similar question" after a miss
+  const calmLeft = () => (M.run && M.run.phase === "ask" ? Math.max(0, (M.run.calmUntil || 0) - Date.now()) : 0);
+  function tickWaits() {
+    clearTimeout(waitTimer);
+    const r = M.run;
+    if (!r || $("runView").hidden) return;
+    const calm = calmLeft(), read = r.phase === "explain" ? Math.max(0, readUntil - Date.now()) : 0;
+    if (r.phase === "ask") {
+      $("checkBtn").textContent = calm ? `Check answer (${Math.ceil(calm / 1000)})` : "Check answer";
+      $("checkBtn").disabled = !!calm || selected === null;
+      idkBtn.disabled = !!calm;
+    } else {
+      $("nextBtn").textContent = "Try a similar question" + (read ? ` (${Math.ceil(read / 1000)})` : "");
+      const was = $("nextBtn").disabled;
+      $("nextBtn").disabled = !!read;
+      if (!read && (was || document.activeElement === document.body)) $("nextBtn").focus();
+    }
+    if (calm || read) waitTimer = setTimeout(tickWaits, 250);
   }
   function choose(i) {
     if (busy || M.run.phase !== "ask") return;
     selected = i;
     [...$("qChoices").children].forEach((b, k) => { b.classList.toggle("sel", k === i); b.setAttribute("aria-checked", String(k === i)); });
-    $("checkBtn").disabled = false;
+    $("checkBtn").disabled = !!calmLeft();
   }
   function lockChoices(picked) {
     const q = M.run.cur;
@@ -222,17 +297,18 @@
   $("checkBtn").onclick = check;
   function check() {
     const r = M.run, q = r.cur;
-    if (busy || selected === null || r.phase !== "ask") return;
+    if (busy || selected === null || r.phase !== "ask" || calmLeft()) return;
     busy = true;
     const ok = q.choices[selected] === q.answer;
     if (ok) {
       const firstTry = r.tries === 0;
+      r.fastRow = 0; calmNote.hidden = true;
       [...$("qChoices").children].forEach((b, k) => { b.disabled = true; if (k === selected) b.classList.add("right"); });
       $("checkBtn").hidden = true; idkBtn.hidden = true;
       if (firstTry) { r.first++; r.coins += COINS_FIRST_TRY; prog.coins += COINS_FIRST_TRY; }
       $("qFb").textContent = firstTry ? `Correct! +${COINS_FIRST_TRY} coins` : "You got it! On to the next question.";
       $("qFb").className = "map-fb good";
-      finishQuestion(firstTry ? 1 : 2);
+      finishQuestion(firstTry ? 1 : r.tries >= HELP_AT ? 3 : 2);
       setTimeout(next, firstTry ? 900 : 1400);
     } else {
       miss(selected, false);
@@ -242,49 +318,64 @@
   // "I don't know": see the explanation without guessing. Counts as 1 wrong attempt, like a miss.
   idkBtn.onclick = idk;
   function idk() {
-    if (busy || !M.run || M.run.phase !== "ask") return;
+    if (busy || !M.run || M.run.phase !== "ask" || calmLeft()) return;
     miss(null, true);
   }
   function miss(picked, idk) {
     const r = M.run;
+    const fast = performance.now() - shownAt < minRead(r.cur);
     r.wrong++; r.tries++; r.idk = idk;
-    r.phase = r.tries >= MAX_TRIES ? "maxed" : "explain";
+    r.phase = "explain";
+    if (fast) noteFast(); else r.fastRow = 0;
+    calmNote.hidden = true;
     $("qWrong").textContent = `Wrong attempts: ${r.wrong}`;
     lockChoices(picked);
     save();
     showExplain();
   }
+  // A wrong answer faster than the question could be read. 2 in a row: "slow down" and Check waits.
+  // 3 within 5 questions: a flag for the teacher (at most one every 10 minutes).
+  function noteFast() {
+    const r = M.run, now = Date.now();
+    r.fast++; r.fastRow++;
+    r.fastQs = [...r.fastQs, r.i].slice(-10);
+    if (r.fastRow >= FAST_ROW) { r.fastRow = 0; r.calm = true; }
+    const n = r.fastQs.filter((i) => i > r.i - FLAG_WITHIN).length;
+    const lastFlag = M.flags.length ? M.flags[M.flags.length - 1].at : 0;
+    if (n >= FLAG_N && now - lastFlag > FLAG_GAP) M.flags = [...M.flags, { at: now, q: r.i + 1, n }].slice(-FLAGS_MAX);
+  }
   function showExplain() {
-    const r = M.run, q = r.cur, maxed = r.phase === "maxed";
-    $("exTitle").textContent = maxed ? "Here's the worked answer" : r.idk ? "No problem. Here's how to solve it" : "Not quite. Here's how to solve it";
+    const r = M.run, q = r.cur, many = r.tries >= HELP_AT;
+    $("exTitle").textContent = r.idk ? "No problem. Here's how to solve it" : "Not quite. Here's how to solve it";
     const ol = $("exSteps"); ol.innerHTML = "";
     for (const s of q.steps) { const li = document.createElement("li"); li.textContent = s; ol.appendChild(li); }
     const a = $("exAnswer"); a.textContent = "So the answer is ";
     const b = document.createElement("b"); b.textContent = q.answer; a.append(b, ".");
-    $("exNote").textContent = maxed ? "That's 3 tries on this one, so let's move on. You'll see this kind of question again in a future run."
-      : "Now try a similar question with new numbers.";
-    $("nextBtn").textContent = maxed ? "Next question" : "Try a similar question";
+    $("exNote").textContent = many ? "Read each step, then try a similar question. These steps will stay on screen to help you."
+      : "Read each step, then try a similar question with new numbers.";
     $("explain").hidden = false;
-    $("nextBtn").focus();
+    readUntil = Date.now() + READ_WAIT;
+    tickWaits();
+    $("explain").scrollIntoView({ block: "nearest" });
   }
   $("nextBtn").onclick = afterExplain;
   function afterExplain() {
     const r = M.run;
-    if (!r || busy) return;
-    if (r.phase === "maxed") { finishQuestion(3); next(); return; }
-    if (r.phase !== "explain") return;
+    if (!r || busy || r.phase !== "explain" || Date.now() < readUntil) return;
+    if (r.tries >= HELP_AT) r.ex = { prompt: r.cur.prompt, figure: r.cur.figure || "", steps: r.cur.steps, answer: r.cur.answer };
     r.cur = MQ.twin(r.cur);
     r.phase = "ask"; r.idk = false;
     save();
     showQuestion();
   }
 
-  // mark: 1 = right on the first try, 2 = right after help, 3 = moved on after 3 misses
+  // mark: 1 = right on the first try, 2 = right after 1-2 misses, 3 = right after 3 or more misses
+  // (before Nov 13, 2026, 3 meant "moved on after 3 misses")
   function finishQuestion(mark) {
     const r = M.run, t = r.cur.topic, tp = (r.topics[t] = r.topics[t] || { r: 0, n: 0 });
     tp.n++; if (mark === 1) tp.r++;
     r.marks.push(mark);
-    r.i++; r.tries = 0; r.phase = "ask"; r.idk = false;
+    r.i++; r.tries = 0; r.phase = "ask"; r.idk = false; r.ex = null;
     if (r.i >= TOTAL) return finishRun();
     r.cur = makeQuestion(r.i);
     save();
@@ -300,7 +391,7 @@
     M.finished++;
     const at = Date.now();
     M.last = { wrong: r.wrong, first: r.first, coins: r.coins, topics: r.topics, isBest, prevBest, at };
-    M.history = [...M.history, { wrong: r.wrong, first: r.first, at }].slice(-PR.MAP_HISTORY_MAX);
+    M.history = [...M.history, { wrong: r.wrong, first: r.first, at, fast: r.fast || 0 }].slice(-PR.MAP_HISTORY_MAX);
     result = M.last;
     M.run = null;
     save();

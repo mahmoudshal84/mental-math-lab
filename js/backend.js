@@ -479,6 +479,7 @@ window.MML = window.MML || {};
             xp: pr.xp, coins: pr.coins, stars: PR.totalStars(pr), lastActive: pr.lastActive,
       mapBest: pr.map && typeof pr.map.best === "number" ? pr.map.best : null,
       mapHistory: PR.mapHistory ? PR.mapHistory(pr.map) : [],
+      mapFlags: pr.map && Array.isArray(pr.map.flags) ? pr.map.flags.filter((f) => f && typeof f.at === "number") : [], // possible guessing
     };
   }
 

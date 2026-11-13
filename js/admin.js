@@ -75,13 +75,14 @@
   function renderRows() {
     const list = visible(), body = $("rows");
     body.innerHTML = "";
+    guessSummary();
     $("count").textContent = `${list.length} student${list.length === 1 ? "" : "s"}`;
     if (!list.length) { body.innerHTML = "<tr><td colspan='9'>No students yet. Add some above.</td></tr>"; return; }
     for (const s of list) {
       const tr = document.createElement("tr");
             [s.displayName, s.username, s.grade, s.password, typeof s.mapBest === "number" ? s.mapBest : "No finished run", s.stars, s.xp, s.coins, ago(s.lastActive)].forEach((v, k) => {
         const td = document.createElement("td"); td.textContent = v; tr.appendChild(td);
-        if (k === 4) mapHistoryCell(td, s, tr);
+        if (k === 4) { guessBadge(td, s); mapHistoryCell(td, s, tr); }
       });
       const cell = document.createElement("td"), acts = document.createElement("div");
       acts.className = "acts"; cell.appendChild(acts);
@@ -102,16 +103,17 @@
   /* MAP Practice history: a "History" button under the best score opens a row with every finished run */
   const mapOpen = new Set(); // students whose history is open, kept open when the table redraws
   function mapHistoryCell(td, s, tr) {
-    const h = s.mapHistory || [];
-    if (!h.length) return;
+    const h = s.mapHistory || [], flags = s.mapFlags || [];
+    if (!h.length && !flags.length) return;
     td.classList.add("map-cell");
     const trend = document.createElement("div"); trend.className = "map-trend";
     const recent = h.slice(-4).map((x) => x.wrong);
-    trend.textContent = h.length === 1 ? "1 finished run" : `Last runs: ${recent.join(" → ")}`;
+    trend.textContent = !h.length ? "" : h.length === 1 ? "1 finished run" : `Last runs: ${recent.join(" → ")}`;
     trend.title = "Wrong attempts in each finished run, oldest to newest. Fewer is better.";
     const b = document.createElement("button"); b.type = "button"; b.className = "mini"; b.textContent = "History";
     b.setAttribute("aria-expanded", "false");
-    td.append(trend, b);
+    if (trend.textContent) td.append(trend);
+    td.append(b);
     let row = null;
     const toggle = () => {
       if (row) { row.remove(); row = null; mapOpen.delete(s.uid); b.setAttribute("aria-expanded", "false"); b.textContent = "History"; return; }
@@ -119,27 +121,84 @@
       row = document.createElement("tr"); row.className = "map-history-row";
       const cell = document.createElement("td"); cell.colSpan = 10; row.appendChild(cell);
       const head = document.createElement("p");
+      if (!h.length) { head.innerHTML = "<b></b> MAP Practice: no finished run yet."; head.firstChild.textContent = s.displayName + "'s"; }
+      else {
       const first = h[0].wrong, last = h[h.length - 1].wrong, d = first - last;
       head.innerHTML = `<b></b> MAP Practice: ${h.length} finished run${h.length === 1 ? "" : "s"}, best <b>${s.mapBest}</b>.`
         + (h.length > 1 ? ` ${d > 0 ? `${d} fewer wrong attempt${d === 1 ? "" : "s"} than their first run.` : d === 0 ? "Same as their first run." : `${-d} more wrong attempt${d === -1 ? "" : "s"} than their first run.`}` : "");
       head.firstChild.textContent = s.displayName + "'s";
+      }
       const tbl = document.createElement("table"); tbl.className = "map-history-table";
-      tbl.innerHTML = "<thead><tr><th>Run</th><th>Finished</th><th>Wrong attempts</th><th>Right on the first try</th></tr></thead>";
+      tbl.innerHTML = "<thead><tr><th>Run</th><th>Finished</th><th>Wrong attempts</th><th>Right on the first try</th><th title='Wrong answers given faster than the question could be read'>Fast guesses</th></tr></thead>";
       const tb = document.createElement("tbody");
       h.slice().reverse().forEach((x, i) => {
         const r = document.createElement("tr");
         const when = x.at ? new Date(x.at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "Earlier";
-        [h.length - i, when, x.wrong + (x.wrong === s.mapBest ? " ★" : ""), typeof x.first === "number" ? `${x.first} of 42` : "Not saved"].forEach((v) => {
+        [h.length - i, when, x.wrong + (x.wrong === s.mapBest ? " ★" : ""), typeof x.first === "number" ? `${x.first} of 42` : "Not saved",
+          typeof x.fast === "number" ? x.fast : "Not saved"].forEach((v) => {
           const c = document.createElement("td"); c.textContent = v; r.appendChild(c);
         });
         tb.appendChild(r);
       });
       tbl.appendChild(tb);
-      cell.append(head, tbl);
+      cell.append(head);
+      if (h.length) cell.append(tbl);
+      if (flags.length) {
+        const fh = document.createElement("p"); fh.className = "guess-head";
+        fh.textContent = `⚠ Possible guessing flags (${flags.length}): 3 or more wrong answers within 5 questions, each faster than the question could be read.`;
+        const fl = document.createElement("ul"); fl.className = "guess-list";
+        flags.slice().reverse().forEach((f) => {
+          const li = document.createElement("li");
+          li.textContent = `${whenAt(f.at)}: on question ${f.q} of 42 (${f.n} fast guesses in the last 5 questions)`;
+          fl.appendChild(li);
+        });
+        cell.append(fh, fl);
+      }
       tr.after(row);
     };
     b.onclick = toggle;
     if (mapOpen.has(s.uid)) setTimeout(toggle); // reopen after the table redraws
+  }
+
+  /* Possible guessing on MAP Practice: a badge in the MAP column and a summary above the table.
+     A flag means 3+ wrong answers within 5 questions, each faster than the question could be read. */
+  const GUESS_DAYS = 7;
+  const whenAt = (at) => new Date(at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  const isToday = (at) => new Date(at).toDateString() === new Date().toDateString();
+  const recentFlags = (s) => (s.mapFlags || []).filter((f) => Date.now() - f.at < GUESS_DAYS * 86400000);
+  function guessBadge(td, s) {
+    const fl = recentFlags(s);
+    if (!fl.length) return;
+    const today = fl.filter((f) => isToday(f.at)).length, last = fl[fl.length - 1];
+    const b = document.createElement("div"); b.className = "guess-badge" + (today ? " today" : "");
+    b.textContent = today ? `⚠ Possible guessing today${today > 1 ? ` (${today}×)` : ""}` : `⚠ Possible guessing ${new Date(last.at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+    b.title = "Fast wrong answers on MAP Practice:\n" + fl.slice().reverse().map((f) => `${whenAt(f.at)}, question ${f.q}`).join("\n") + "\nOpen History for details.";
+    td.appendChild(b);
+  }
+  function guessSummary() {
+    let box = $("guessNote");
+    if (!box) { // an older saved admin.html
+      box = document.createElement("div"); box.id = "guessNote"; box.className = "guess-note";
+      $("rows").closest(".tablewrap").before(box);
+    }
+    const today = students.map((s) => ({ s, fl: (s.mapFlags || []).filter((f) => isToday(f.at)) })).filter((x) => x.fl.length)
+      .sort((a, b) => b.fl[b.fl.length - 1].at - a.fl[a.fl.length - 1].at);
+    box.innerHTML = "";
+    const p = document.createElement("p");
+    p.textContent = today.length ? `⚠ Possible guessing on MAP Practice today: ` : "No possible guessing on MAP Practice today.";
+    today.forEach((x, i) => {
+      const nb = document.createElement("button"); nb.type = "button"; nb.className = "linkish";
+      const t = new Date(x.fl[x.fl.length - 1].at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+      nb.textContent = `${x.s.displayName}`;
+      nb.title = "Show only this student in the table";
+      nb.onclick = () => { $("search").value = x.s.displayName; $("gradeFilter").value = ""; renderRows(); };
+      p.append(nb, ` (${x.fl.length > 1 ? `${x.fl.length} times, last ` : ""}${t})${i < today.length - 1 ? ", " : "."}`);
+    });
+    const r = document.createElement("button"); r.type = "button"; r.className = "mini"; r.textContent = "Refresh";
+    r.title = "Load the newest scores and flags";
+    r.onclick = async () => { r.disabled = true; r.textContent = "Refreshing…"; await load(); };
+    box.className = "guess-note" + (today.length ? " on" : "");
+    box.append(p, r);
   }
 
   async function run(button, fn, done) {

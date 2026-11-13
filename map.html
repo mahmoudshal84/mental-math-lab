@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Lexend:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/map.css">
+  <link rel="stylesheet" href="css/map.css?v=20261113">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌈</text></svg>">
 </head>
 <body data-themed class="map-page">
@@ -30,7 +30,7 @@
         <ul class="map-rules">
           <li><b>42 questions</b> in 7 stages that start easy and get harder.</li>
           <li><b>No timer.</b> Take your time and use scratch paper, like on the real test.</li>
-          <li><b>Miss one?</b> You'll see how to solve it, then get a similar question. Get it right to move on.</li>
+          <li><b>Miss one?</b> You'll see how to solve it, then get a similar question. You move on only when you get one right, so guessing doesn't help.</li>
           <li><b>Don't know how?</b> Click <b>I don't know</b> instead of guessing to see how to solve it. It counts as 1 wrong attempt, like a wrong guess.</li>
           <li><b>Your score</b> is your number of wrong attempts, so fewer is better.</li>
           <li><b>Coins:</b> 2 for each question right on the first try, plus 30 for finishing.</li>
@@ -76,8 +76,16 @@
             <span class="map-topic" id="qTopic"></span>
             <span class="map-similar" id="qSimilar" hidden>Similar question: use what you just learned</span>
           </div>
+          <p class="map-calm" id="qCalm" role="status" hidden></p>
           <h2 class="map-prompt" id="qPrompt" tabindex="-1"></h2>
           <div class="map-fig" id="qFig"></div>
+          <div class="map-example" id="qExample" hidden>
+            <h3>Stuck? Here's the last question, solved. Use the same steps.</h3>
+            <p class="map-example-q"></p>
+            <div class="map-example-fig"></div>
+            <ol></ol>
+            <p class="map-answer"></p>
+          </div>
           <div class="map-choices" id="qChoices" role="radiogroup" aria-labelledby="qPrompt"></div>
           <div class="actions">
             <button class="btn btn-primary" id="checkBtn" type="button" disabled>Check answer</button>
@@ -127,10 +135,10 @@
   <script src="js/problems.js"></script>
   <script src="js/avatar.js"></script>
   <script src="js/progress.js?v=20261106"></script>
-  <script src="js/backend.js?v=20261106"></script>
+  <script src="js/backend.js?v=20261113"></script>
   <script src="js/lock.js"></script>
   <script src="js/help.js"></script>
   <script src="js/map-questions.js"></script>
-  <script src="js/map.js?v=20261106"></script>
+  <script src="js/map.js?v=20261113"></script>
 </body>
 </html>

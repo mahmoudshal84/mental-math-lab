@@ -11,12 +11,13 @@
 
    Match data lives in the Realtime Database at rooms/{CODE}:
      host, mode ("race" or "blast"), created, state ("lobby" or "playing")
-     Every match uses the same problems: a mix of all six topics at levels 1 and 2 (MIX below).
+     Every match uses the same problems: a mix of all eight topics at levels 1 and 2 (MIX below).
      players/{uid}: name, avatar, team ("a" or "b"), on (connected), joined
      game: round, seed, start (when the round starts), size (players per team),
            wins {a, b}, result {r1: "a", ...}, winner, forfeit
      boards/r{round}/{team}/t{index}: uid of the player who cleared that problem (Race to 5)
-     blasts/b{index}: uid of the player who blasted that problem (Blast Battle; game has id, seed, start, n, over) */
+     blasts/b{index}: uid of the player who blasted that problem (Blast Battle; game has id, seed, start, n, over,
+       and speed: 1, 1.5, or 2, how many times longer the problems take to fall, picked by the host in the lobby) */
 (async function () {
   const B = MML.backend, P = MML.problems, PR = MML.progress, AV = MML.avatar, L = B.live;
   const $ = (id) => document.getElementById(id);
@@ -26,6 +27,9 @@
   const TEAM_NAME = { a: "Mint team", b: "Pink team" };
   const other = (t) => (t === "a" ? "b" : "a");
   const BLAST_N = 20, BLAST_MAX = 4, SPAWN_MS = 2600;
+  // Blast Battle falling speed: problems take 1, 1.5, or 2 times as long to fall, and come out that much further apart
+  const SPEEDS = [1, 1.5, 2], SPEED_NAME = { 1: "Normal", 1.5: "Slower", 2: "Slowest" };
+  const speedOf = (g) => (g && SPEEDS.includes(g.speed) ? g.speed : 1);
   const COLORS = ["#2ee6a6", "#ff4f8b", "#ffd23f", "#3dd6ff"]; // Blast Battle player colors, in join order
   const MODE_NAME = { race: "Race to 5", blast: "Blast Battle" };
   const modeOf = (r) => (r && r.mode === "blast" ? "blast" : "race");
@@ -70,7 +74,7 @@
   const myTeam = () => (me() ? me().team : "a");
   const newSeed = () => 1 + Math.floor(Math.random() * 2147483000);
   const meEntry = (t) => ({ name: user.profile.displayName, avatar: AV.clean(prog.avatar), team: t, on: true, joined: L.now() });
-  // Every Versus board draws from all six topics, levels 1 and 2
+  // Every Versus board draws from all eight topics, levels 1 and 2
   const MIX = P.order.flatMap((t) => [1, 2].map((l) => [t, l]));
 
   /* ---------- The board: every screen builds the same problems from the round's seed ---------- */
@@ -283,8 +287,38 @@
       : isHost ? "Ready when you are!" : "Waiting for the host to start…";
   }
   const colorOf = (uid) => COLORS[Math.max(0, players().findIndex((p) => p.uid === uid)) % COLORS.length];
+  // The host's speed choice, remembered in this browser. Made here if versus.html is an old saved copy.
+  function speedBox() {
+    let box = $("speedBox");
+    if (!box) {
+      box = document.createElement("div"); box.className = "speed-pick"; box.id = "speedBox";
+      box.innerHTML = `<p class="speed-label" id="speedLabel">Falling speed</p><div class="speed-opts" id="speedOpts" role="radiogroup" aria-labelledby="speedLabel">`
+        + SPEEDS.map((v) => `<label class="speed-opt"><input type="radio" name="speed" value="${v}"><span>${SPEED_NAME[v]}</span></label>`).join("")
+        + `</div><p class="speed-note" id="speedNote"></p>`;
+      $("ffaBox").appendChild(box);
+    }
+    if (!box.dataset.ready) {
+      box.dataset.ready = "1";
+      const saved = +localStorage.getItem("mml-vs-speed");
+      const pick = SPEEDS.includes(saved) ? saved : 1;
+      box.querySelectorAll("input[name=speed]").forEach((r) => {
+        r.checked = +r.value === pick;
+        r.onchange = () => { localStorage.setItem("mml-vs-speed", r.value); renderLobby(); };
+      });
+    }
+    return box;
+  }
+  function chosenSpeed() {
+    const r = document.querySelector("input[name=speed]:checked");
+    return r && SPEEDS.includes(+r.value) ? +r.value : 1;
+  }
   function renderBlastLobby() {
     const isHost = room.host === user.uid, ps = players();
+    speedBox();
+    $("speedOpts").hidden = !isHost;
+    const sp = chosenSpeed();
+    $("speedNote").textContent = !isHost ? "The host picks how fast the problems fall."
+      : sp === 1 ? "Problems fall at the usual speed." : `Problems take ${sp === 2 ? "twice" : "1.5 times"} as long to fall.`;
     const ul = $("ffaList"); ul.innerHTML = "";
     ps.forEach((p) => { const li = playerRow(p); li.style.setProperty("--pc", colorOf(p.uid)); ul.appendChild(li); });
     for (let i = ps.length; i < BLAST_MAX; i++) { const li = document.createElement("li"); li.className = "open"; li.textContent = "Open spot"; ul.appendChild(li); }
@@ -309,7 +343,7 @@
     try {
       if (modeOf(room) === "blast") await L.update("rooms/" + code, {
         state: "playing", blasts: null,
-        game: { id, seed: newSeed(), start: L.now() + COUNTDOWN_MS + 600, n: BLAST_N },
+        game: { id, seed: newSeed(), start: L.now() + COUNTDOWN_MS + 600, n: BLAST_N, speed: chosenSpeed() },
       });
       else await L.update("rooms/" + code, {
         state: "playing", boards: null,
@@ -577,11 +611,12 @@
     const qs = makeBoard(g.seed, g.n || BLAST_N);
     const rnd = seeded((g.seed ^ 0x5bd1e995) >>> 0);
     let lastLane = -1;
+    const sp = speedOf(g);
     const list = qs.map((q, i) => {
       let lane; do { lane = Math.floor(rnd() * 4); } while (lane === lastLane);
       lastLane = lane;
-      const fall = Math.min(15000, 9000 + Math.max(0, q.prompt.length - 12) * 140); // word problems fall slower
-      const spawn = g.start + i * SPAWN_MS;
+      const fall = Math.min(15000, 9000 + Math.max(0, q.prompt.length - 12) * 140) * sp; // word problems fall slower
+      const spawn = g.start + i * SPAWN_MS * sp;
       return { prompt: q.prompt, answer: q.answer, lane, spawn, land: spawn + fall };
     });
     blast.els.forEach((e) => e.remove());
@@ -719,7 +754,8 @@
     if (now < g.start) {
       input.disabled = true; ov.hidden = false;
       card.className = "race-card count";
-      card.innerHTML = `<p>Blast Battle</p><strong>${Math.min(3, Math.ceil((g.start - now) / 1000))}</strong>`;
+      const sp = speedOf(g);
+      card.innerHTML = `<p>Blast Battle${sp === 1 ? "" : `: ${SPEED_NAME[sp]} speed`}</p><strong>${Math.min(3, Math.ceil((g.start - now) / 1000))}</strong>`;
     } else {
       ov.hidden = true;
       if (input.disabled && !frozen) { input.disabled = false; input.focus(); $("blastMsg").textContent = ""; }

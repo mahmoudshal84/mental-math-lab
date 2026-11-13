@@ -105,6 +105,19 @@
 .map-answer { font-size: 1.1rem; margin: 0 0 6px; }
 .map-answer b { background: var(--mint); padding: 1px 8px; border-radius: 6px; }
 .map-ex-note { margin: 0 0 14px; opacity: 0.8; }
+
+/* From the 3rd miss on: the last question's worked example stays above the choices */
+.map-example { margin: 0 0 18px; background: #eef0ff; border-left: 6px solid var(--cobalt); border-radius: var(--radius-sm); padding: 14px 18px 12px; }
+.map-example h3 { margin: 0 0 8px; font-size: 1rem; }
+.map-example-q { margin: 0 0 8px; font-style: italic; }
+.map-example-fig svg { display: block; width: 100%; max-width: 260px; height: auto; margin: 0 0 8px; }
+.map-example ol { margin: 0 0 8px; padding-left: 22px; max-width: 66ch; }
+.map-example li { margin-bottom: 4px; }
+.map-example .map-answer { font-size: 1rem; }
+.map-example[hidden], .map-calm[hidden] { display: none; }
+
+/* "Slow down" note after fast guesses */
+.map-calm { margin: 0 0 12px; padding: 10px 14px; border-radius: var(--radius-sm); background: #ffe3ec; border-left: 6px solid var(--pink); font-weight: 700; }
 .map-keys { font-size: 0.85rem; opacity: 0.75; margin: 12px 0 0; }
 
 /* Results */

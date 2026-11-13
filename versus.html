@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Lexend:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=20261113">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏁</text></svg>">
 </head>
 <body data-themed>
@@ -35,7 +35,7 @@
               <span><b>Blast Battle</b>Everyone for themselves, 2 to 4 players. First to type the answer blasts the problem.</span></label>
           </div>
           <p class="note">You'll get a room code to share, and you can invite friends.</p>
-          <p class="mix-note">Problems are a mix of all six topics, levels 1 and 2.</p>
+          <p class="mix-note">Problems are a mix of all eight topics, levels 1 and 2.</p>
           <p class="error" id="createErr" role="alert"></p>
           <button class="btn btn-primary" id="createBtn" type="button">Start a match</button>
         </section>
@@ -70,6 +70,15 @@
           <p class="note" id="lobbyNote">Share the code, or invite friends. Teams need the same number of players, from 1 to 3 each.</p>
           <div class="ffa" id="ffaBox" hidden>
             <ul id="ffaList"></ul>
+            <div class="speed-pick" id="speedBox">
+              <p class="speed-label" id="speedLabel">Falling speed</p>
+              <div class="speed-opts" id="speedOpts" role="radiogroup" aria-labelledby="speedLabel">
+                <label class="speed-opt"><input type="radio" name="speed" value="1" checked><span>Normal</span></label>
+                <label class="speed-opt"><input type="radio" name="speed" value="1.5"><span>Slower</span></label>
+                <label class="speed-opt"><input type="radio" name="speed" value="2"><span>Slowest</span></label>
+              </div>
+              <p class="speed-note" id="speedNote"></p>
+            </div>
           </div>
           <div class="teams" id="teamsBox">
             <div class="team-col mint">
@@ -85,7 +94,7 @@
             <button class="btn btn-ghost" id="switchBtn" type="button">Switch team</button>
             <button class="btn btn-ghost" id="botBtn" type="button" hidden>Add a pretend player</button>
           </div>
-          <p class="mix-note">Problems are a mix of all six topics, levels 1 and 2.</p>
+          <p class="mix-note">Problems are a mix of all eight topics, levels 1 and 2.</p>
           <p class="start-hint" id="startHint"></p>
           <div class="actions">
             <button class="btn btn-primary" id="startBtn" type="button">Start match</button>
@@ -162,6 +171,6 @@
   <script src="js/lock.js"></script>
   <script src="js/help.js"></script>
   <script src="js/invites.js"></script>
-  <script src="js/versus.js"></script>
+  <script src="js/versus.js?v=20261113"></script>
 </body>
 </html>

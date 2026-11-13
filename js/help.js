@@ -62,7 +62,8 @@ MML.help = (function () {
         <p>Click <b>Play Versus</b> on the home page, pick a game, and start a match, or join one with a 4-letter room code.
         The player who starts a match can invite friends. Every match uses a mix of all eight topics, levels 1 and 2.</p>
         <p><b>Blast Battle</b> is for 2 to 4 players, everyone for themselves. The same 20 problems fall on everyone's screen at the same time.
-        The first player to type the answer and press Enter blasts it and gets the point. Problems that hit the ground don't count for anyone. Most points wins.</p>
+        The first player to type the answer and press Enter blasts it and gets the point. Problems that hit the ground don't count for anyone. Most points wins.
+        In the lobby, the host can make the problems fall <b>Slower</b> or <b>Slowest</b>.</p>
         <p><b>Race to 5</b> is a team race:</p>
         <ul><li><b>Teams:</b> 1 vs 1, 2 vs 2, or 3 vs 3. Both teams need the same number of players.</li>
         <li><b>Same problems:</b> both teams get the same board, with 5 problems for each player on the team.</li>
@@ -78,7 +79,8 @@ MML.help = (function () {
         <ul><li><b>No timer:</b> take your time and use scratch paper.</li>
         <li><b>Miss one?</b> You'll see how to solve it step by step, then get a similar question with new numbers. Get it right to move on.</li>
         <li><b>Not sure how to do it?</b> Click <b>I don't know</b> instead of guessing. You'll see how to solve it, then get a similar question. It counts as 1 wrong attempt, the same as a wrong guess.</li>
-        <li><b>3 misses</b> on the same question shows you the worked answer, and then you move on.</li>
+        <li><b>You move on only when you get one right.</b> After 3 misses, the worked example stays on screen so you can follow the same steps.</li>
+        <li><b>Don't rush:</b> after a miss, take a few seconds to read the steps. Answers that are too fast to be real tries make you wait, and your teacher can see them.</li>
         <li><b>Coins:</b> 2 for each question you get right on the first try, plus 30 for finishing.</li></ul>
         <p>Your score is your number of wrong attempts, so fewer is better. Your best finished run shows on the home page, and your teacher can see it too.
         Your place saves after every answer, so you can finish next class.</p>`],
