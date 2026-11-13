@@ -876,5 +876,20 @@ window.MML = window.MML || {};
     return t;
   }
 
-  MML.mapQuestions = { TOTAL, STAGES, PER_STAGE, ORDER, LABELS, plan, generate, twin, _G: G };
+  // Questions that show the calculator (Nov 13, 2026): word problems and applied questions, where the
+  // skill isn't the arithmetic itself. No calculator when the question tests a basic operation or
+  // number skill: Quick facts computation, integer rules, exponents and scientific notation,
+  // order of operations, fraction <-> decimal, dividing by a fraction, and simple algebra steps.
+  // Keys are "topic:stage" (every variant) or "topic:stage:variant".
+  const CALC = new Set([
+    "facts:2", "facts:7",
+    "fdp:2", "fdp:3", "fdp:5", "fdp:6", "fdp:7",
+    "ratios:1", "ratios:2", "ratios:3", "ratios:4", "ratios:5", "ratios:6", "ratios:7",
+    "equations:4", "equations:5", "equations:7:0", "equations:7:1",
+    "geometry:1", "geometry:3", "geometry:4", "geometry:5", "geometry:6", "geometry:7",
+    "data:1", "data:2", "data:3", "data:4", "data:5", "data:6", "data:7",
+  ]);
+  const calcAllowed = (q) => !!q && (CALC.has(`${q.topic}:${q.stage}`) || CALC.has(`${q.topic}:${q.stage}:${q.v}`));
+
+  MML.mapQuestions = { TOTAL, STAGES, PER_STAGE, ORDER, LABELS, plan, generate, twin, calcAllowed, _G: G };
 })(window.MML);

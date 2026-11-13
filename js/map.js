@@ -203,6 +203,140 @@
     $("qPrompt").before(calmNote);
   }
   let shownAt = 0, readUntil = 0, waitTimer = 0;
+
+  /* ---------- Calculator (Nov 13, 2026): on the side for word problems and applied questions ----------
+     MQ.calcAllowed(q) decides which questions get it. Click-only, so it doesn't fight the 1-4 / A-D keys.
+     It uses the order of operations (× and ÷ before + and −), like the calculator on the real test. */
+  const calc = (() => {
+    const box = document.createElement("aside");
+    box.className = "map-calc"; box.id = "calc"; box.hidden = true; box.setAttribute("aria-label", "Calculator");
+    box.innerHTML = `<p class="map-calc-title">Calculator</p>
+      <div class="map-calc-screen"><div class="map-calc-expr" aria-hidden="true"></div><div class="map-calc-out" aria-live="polite"></div></div>
+      <div class="map-calc-keys"></div>`;
+    const KEYS = ["C", "⌫", "√", "÷", "7", "8", "9", "×", "4", "5", "6", "−", "1", "2", "3", "+", "±", "0", ".", "="];
+    const NAMES = { "C": "Clear", "⌫": "Delete", "√": "Square root", "÷": "Divide", "×": "Times", "−": "Minus", "+": "Plus", "±": "Positive or negative", "=": "Equals", ".": "Point" };
+    const keys = box.querySelector(".map-calc-keys");
+    for (const k of KEYS) {
+      const b = document.createElement("button");
+      b.type = "button"; b.textContent = k; b.className = "map-calc-key" + ("÷×−+".includes(k) ? " op" : k === "=" ? " eq" : k === "C" || k === "⌫" ? " fn" : "");
+      if (NAMES[k]) b.setAttribute("aria-label", NAMES[k]);
+      b.onclick = () => press(k);
+      keys.appendChild(b);
+    }
+    let toks = [], done = false, err = false; // toks: numbers (as strings) and operators; done = just pressed =
+    const isOp = (t) => "+−×÷".includes(t) && t.length === 1;
+    const last = () => toks[toks.length - 1];
+    const fmt = (x) => {
+      if (!isFinite(x)) return "Error";
+      const v = parseFloat(x.toPrecision(10));
+      return (Math.abs(v) >= 1e12 || (v !== 0 && Math.abs(v) < 1e-9) ? String(v) : v.toLocaleString("en-US", { maximumFractionDigits: 9 })).replace(/^-/, "−");
+    };
+    function evaluate(list) {
+      const t = list.slice();
+      if (isOp(t[t.length - 1])) t.pop();
+      if (!t.length) return 0;
+      const vals = [parseFloat(t[0])], ops = [];
+      for (let i = 1; i < t.length; i += 2) {
+        const op = t[i], n = parseFloat(t[i + 1]);
+        if (op === "×") vals[vals.length - 1] *= n;
+        else if (op === "÷") vals[vals.length - 1] /= n;
+        else { ops.push(op); vals.push(n); }
+      }
+      let r = vals[0];
+      ops.forEach((op, i) => { r = op === "+" ? r + vals[i + 1] : r - vals[i + 1]; });
+      return r;
+    }
+    const plain = (x) => String(parseFloat(x.toPrecision(10)));
+    function press(k) {
+      if (err && k !== "C") return;
+      if (k === "C") { toks = []; done = false; err = false; return draw(); }
+      if (/[0-9]/.test(k) || k === ".") {
+        if (done) { toks = []; done = false; }
+        let n = last();
+        if (n === undefined || isOp(n)) { toks.push(k === "." ? "0." : k); return draw(); }
+        if (k === "." && n.includes(".")) return;
+        if (n.replace(/[-.]/g, "").length >= 12) return;
+        toks[toks.length - 1] = n === "0" && k !== "." ? k : n === "-0" && k !== "." ? "-" + k : n + k;
+        return draw();
+      }
+      if (k === "⌫") {
+        if (done) { done = false; return draw(); }
+        const n = last(); if (n === undefined) return;
+        if (isOp(n) || n.length <= 1 || n === "-0") toks.pop(); else toks[toks.length - 1] = n.slice(0, -1) === "-" ? "-0" : n.slice(0, -1);
+        return draw();
+      }
+      if (isOp(k)) {
+        done = false;
+        if (!toks.length) toks.push("0");
+        if (isOp(last())) toks[toks.length - 1] = k; else toks.push(k);
+        return draw();
+      }
+      if (k === "±" || k === "√") {
+        if (done) { toks = [plain(evaluate(toks))]; done = false; }
+        const n = last();
+        if (n === undefined || isOp(n)) { if (k === "±") toks.push("-0"); return draw(); }
+        const v = parseFloat(n);
+        if (k === "±") toks[toks.length - 1] = n.startsWith("-") ? n.slice(1) : "-" + n;
+        else if (v < 0) { err = true; return draw("Error"); }
+        else toks[toks.length - 1] = plain(Math.sqrt(v));
+        return draw();
+      }
+      if (k === "=") {
+        if (!toks.length) return;
+        const r = evaluate(toks);
+        if (!isFinite(r)) { err = true; return draw("Error"); }
+        exprShown = toks.filter((t, i) => !(i === toks.length - 1 && isOp(t))).map(show).join(" ") + " =";
+        toks = [plain(r)]; done = true;
+        return draw();
+      }
+    }
+    let exprShown = "";
+    // How a token looks: commas in whole parts, a real minus sign, and typed decimals kept as typed (like "2.50")
+    const show = (t) => {
+      if (isOp(t)) return t;
+      if (t.startsWith("-")) return "−" + show(t.slice(1));
+      if (/e/i.test(t)) return t;
+      const [w, d] = t.split(".");
+      return Number(w || 0).toLocaleString("en-US") + (d !== undefined ? "." + d : "");
+    };
+    function draw(msg) {
+      const ex = box.querySelector(".map-calc-expr"), out = box.querySelector(".map-calc-out");
+      if (msg) { ex.textContent = ""; out.textContent = msg; return; }
+      if (done) { ex.textContent = exprShown; out.textContent = fmt(parseFloat(toks[0])); return; }
+      ex.textContent = toks.length > 1 ? toks.map(show).join(" ") : "";
+      const n = [...toks].reverse().find((t) => !isOp(t));
+      out.textContent = n === undefined ? "0" : show(n);
+    }
+    draw();
+    return {
+      box,
+      show(on) {
+        box.hidden = !on;
+        const row = box.parentElement;
+        if (row) row.classList.toggle("with-calc", on);
+      },
+      clear() { press("C"); },
+    };
+  })();
+  // Put the calculator next to the question card
+  (() => {
+    const card = $("qPrompt").closest(".map-q"), row = document.createElement("div");
+    row.className = "map-q-row";
+    card.before(row); row.append(card, calc.box);
+  })();
+  let calcFor = null; // the question the calculator was last cleared for
+  function showCalc() {
+    const q = M.run.cur, on = !!(MQ.calcAllowed && MQ.calcAllowed(q));
+    if (calcFor !== q) { calcFor = q; calc.clear(); }
+    calc.show(on);
+    $("qCalcTag").hidden = !on;
+  }
+  let calcTag = $("qCalcTag");
+  if (!calcTag) {
+    calcTag = document.createElement("span"); calcTag.className = "map-calc-tag"; calcTag.id = "qCalcTag"; calcTag.hidden = true;
+    calcTag.textContent = "Calculator allowed";
+    $("qTopic").after(calcTag);
+  }
   function showQuestion() {
     const r = M.run, q = r.cur;
     view("runView");
@@ -236,6 +370,7 @@
     idkBtn.hidden = false; idkBtn.disabled = false;
     $("explain").hidden = true;
     showExample();
+    showCalc();
     // Coming back to a question they already missed: show the explanation again
     if (r.phase === "explain") { calmNote.hidden = true; lockChoices(null); showExplain(); return; }
     shownAt = performance.now();
@@ -463,6 +598,7 @@
   /* ---------- Keyboard: 1-4 or A-D picks an answer, Enter checks or continues ---------- */
   addEventListener("keydown", (e) => {
     if ($("runView").hidden || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target && e.target.closest && e.target.closest("#calc")) return; // calculator buttons handle their own keys
     const r = M.run;
     if (!r) return;
     const k = e.key.toLowerCase(), idx = "1234".indexOf(k) >= 0 ? "1234".indexOf(k) : "abcd".indexOf(k);

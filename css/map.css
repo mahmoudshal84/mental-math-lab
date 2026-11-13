@@ -65,6 +65,25 @@
 .map-q { padding: 24px 30px 26px; }
 @media (max-width: 560px) { .map-q { padding: 20px 18px; } }
 .map-q-head { display: flex; gap: 8px 10px; flex-wrap: wrap; margin-bottom: 12px; }
+
+/* Calculator on the side (only on questions that allow it) */
+.map-q-row.with-calc { display: grid; grid-template-columns: minmax(0, 1fr) 216px; gap: 16px; align-items: start; }
+@media (max-width: 860px) { .map-q-row.with-calc { grid-template-columns: 1fr; } .map-calc { position: static; width: 100%; max-width: 320px; } }
+.map-calc { background: var(--ink); color: var(--paper); border-radius: var(--radius-sm); padding: 12px; box-shadow: 6px 6px 0 rgba(0,0,0,.25); position: sticky; top: 12px; }
+.map-calc[hidden], .map-calc-tag[hidden] { display: none; }
+.map-calc-title { margin: 0 0 8px; font-weight: 700; font-size: 0.9rem; letter-spacing: .02em; }
+.map-calc-screen { background: #f6f7ff; color: var(--ink); border-radius: 8px; padding: 6px 10px; text-align: right; margin-bottom: 10px; min-height: 58px; }
+.map-calc-expr { font-size: 0.8rem; opacity: 0.7; min-height: 1.2em; overflow-wrap: anywhere; }
+.map-calc-out { font-size: 1.5rem; font-weight: 700; overflow-wrap: anywhere; line-height: 1.25; }
+.map-calc-keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.map-calc-key { font: inherit; font-weight: 700; font-size: 1.05rem; padding: 9px 0; border-radius: 8px; border: 0; background: #2f3670; color: var(--paper); cursor: pointer; }
+.map-calc-key:hover { background: #3d4590; }
+.map-calc-key:active { transform: translateY(1px); }
+.map-calc-key:focus-visible { outline: 3px solid var(--sun); outline-offset: 1px; }
+.map-calc-key.op { background: var(--cobalt); }
+.map-calc-key.fn { background: #4a4f7a; }
+.map-calc-key.eq { background: var(--sun); color: var(--ink); }
+.map-calc-tag { font-size: 0.8rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: #dfe3ff; color: var(--cobalt); }
 .map-topic { background: var(--ink); color: var(--paper); font-weight: 700; font-size: 0.85rem; padding: 3px 12px; border-radius: 999px; }
 .map-similar { background: var(--sun); color: var(--ink); font-weight: 700; font-size: 0.85rem; padding: 3px 12px; border-radius: 999px; }
 .map-prompt { font-size: clamp(1.15rem, 2.6vw, 1.4rem); font-weight: 600; line-height: 1.5; white-space: pre-line; margin: 0 0 18px; max-width: 62ch; }
