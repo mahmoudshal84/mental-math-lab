@@ -65,8 +65,8 @@ MML.help = (function () {
         The first player to type the answer and press Enter blasts it and gets the point. Problems that hit the ground don't count for anyone. Most points wins.
         In the lobby, the host can make the problems fall <b>Slower</b> or <b>Slowest</b>.</p>
         <p><b>Race to 5</b> is a team race:</p>
-        <ul><li><b>Teams:</b> 1 vs 1, 2 vs 2, or 3 vs 3. Both teams need the same number of players.</li>
-        <li><b>Same problems:</b> both teams get the same board, with 5 problems for each player on the team.</li>
+        <ul><li><b>Teams:</b> 1 to 3 players on each team, and teams can be uneven, like 1 vs 3. Each team's board has 5 problems for every player on that team, so a team of 1 clears 5 and a team of 3 clears 15.</li>
+        <li><b>Same problems:</b> both teams get the same problems. A smaller team gets fewer of them.</li>
         <li><b>Type and press Enter:</b> your answer clears whichever problem it matches. Anyone on your team can clear any problem.</li>
         <li><b>Don't guess:</b> an answer that isn't on your board freezes your typing for a moment.</li>
         <li><b>Best of 3:</b> the first team to clear its board wins the round, and the first team to win 2 rounds wins the match.</li></ul>

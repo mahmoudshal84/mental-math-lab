@@ -13,7 +13,9 @@
      host, mode ("race" or "blast"), created, state ("lobby" or "playing")
      Every match uses the same problems: a mix of all eight topics at levels 1 and 2 (MIX below).
      players/{uid}: name, avatar, team ("a" or "b"), on (connected), joined
-     game: round, seed, start (when the round starts), size (players per team),
+     game: round, seed, start (when the round starts), size (players on the bigger team),
+           sizes {a, b} (players on each team when the match started; teams can be uneven, like 1 vs 3,
+           and each team's board has 5 problems per player on that team),
            wins {a, b}, result {r1: "a", ...}, winner, forfeit
      boards/r{round}/{team}/t{index}: uid of the player who cleared that problem (Race to 5)
      blasts/b{index}: uid of the player who blasted that problem (Blast Battle; game has id, seed, start, n, over,
@@ -103,12 +105,16 @@
     } finally { Math.random = real; }
     return list;
   }
+  // The full shared board (5 per player on the bigger team). Each team gets the start of it:
+  // 5 problems per player on that team, so a team of 1 vs a team of 3 clears 5 vs 15.
   function boardFor(g) {
     if (board.seed !== g.seed) { board = { seed: g.seed, list: makeBoard(g.seed, g.size * PER_PLAYER) }; pending.clear(); }
     return board.list;
   }
+  const teamSize = (g, t) => Math.max(1, Math.min(g.size, (g.sizes && g.sizes[t]) || g.size));
+  const teamBoard = (g, t) => boardFor(g).slice(0, teamSize(g, t) * PER_PLAYER);
+  const doneCount = (g, t, list) => { const c = clearedBy(g, t); return list.filter((_, i) => c["t" + i]).length; };
   const clearedBy = (g, t) => (room.boards && room.boards["r" + g.round] && room.boards["r" + g.round][t]) || {};
-  const countOf = (obj) => Object.values(obj).filter(Boolean).length;
 
   /* ---------- Menu ---------- */
   function showMenu(msg) {
@@ -261,7 +267,7 @@
     const isBlast = modeOf(room) === "blast";
     $("lobbyMode").textContent = MODE_NAME[modeOf(room)];
     $("lobbyNote").textContent = isBlast ? "Share the code, or invite friends. 2 to 4 players, everyone for themselves."
-      : "Share the code, or invite friends. Teams need the same number of players, from 1 to 3 each.";
+      : "Share the code, or invite friends. 1 to 3 players on each team. Teams can be uneven, like 1 vs 3.";
     $("teamsBox").hidden = isBlast; $("ffaBox").hidden = !isBlast;
     if (isBlast) return renderBlastLobby();
     const A = team("a"), Bt = team("b"), isHost = room.host === user.uid;
@@ -277,14 +283,14 @@
     $("botBtn").disabled = players().length >= MAX_TEAM * 2;
 
     const allHere = players().every((p) => p.on !== false);
-    const ready = A.length >= 1 && A.length === Bt.length && allHere;
+    const ready = A.length >= 1 && Bt.length >= 1 && allHere; // teams can be uneven, like 1 vs 3
     $("startBtn").hidden = !isHost;
     $("startBtn").disabled = !ready;
     $("startBtn").textContent = ready ? `Start ${A.length} vs ${Bt.length}` : "Start match";
+    const uneven = A.length !== Bt.length ? ` Uneven teams: each team clears 5 problems per player (${A.length * PER_PLAYER} vs ${Bt.length * PER_PLAYER}).` : "";
     $("startHint").textContent = !A.length || !Bt.length ? "Waiting for players on both teams…"
-      : A.length !== Bt.length ? `Teams need the same number of players (now ${A.length} vs ${Bt.length}).`
       : !allHere ? "Waiting for everyone to reconnect…"
-      : isHost ? "Ready when you are!" : "Waiting for the host to start…";
+      : (isHost ? "Ready when you are!" : "Waiting for the host to start…") + uneven;
   }
   const colorOf = (uid) => COLORS[Math.max(0, players().findIndex((p) => p.uid === uid)) % COLORS.length];
   // The host's speed choice, remembered in this browser. Made here if versus.html is an old saved copy.
@@ -347,7 +353,8 @@
       });
       else await L.update("rooms/" + code, {
         state: "playing", boards: null,
-        game: { id, round: 1, seed: newSeed(), start: L.now() + COUNTDOWN_MS + 600, size: team("a").length, wins: { a: 0, b: 0 } },
+        game: { id, round: 1, seed: newSeed(), start: L.now() + COUNTDOWN_MS + 600, size: Math.max(team("a").length, team("b").length),
+          sizes: { a: team("a").length, b: team("b").length }, wins: { a: 0, b: 0 } },
       });
     } catch (e) { toast(e.message); $("startBtn").disabled = false; }
   };
@@ -416,7 +423,7 @@
   function renderGame() {
     const g = room.game;
     if (!g) return;
-    const list = boardFor(g), mt = myTeam(), ot = other(mt);
+    const mt = myTeam(), ot = other(mt), list = teamBoard(g, mt), theirList = teamBoard(g, ot);
     const mineDone = clearedBy(g, mt), theirsDone = clearedBy(g, ot);
 
     // Coins are saved when a round ends
@@ -428,22 +435,22 @@
     list.forEach((q, i) => {
       const k = "t" + i;
       tm.appendChild(tile(q, i, mineDone[k] || (pending.has(g.round + ":" + i) ? user.uid : null), pending.has(g.round + ":" + i) && !mineDone[k], true));
-      tt.appendChild(tile(q, i, theirsDone[k], false, false));
     });
-    tm.dataset.n = tt.dataset.n = list.length;
-    const cm = countOf(mineDone), ct = countOf(theirsDone);
+    theirList.forEach((q, i) => tt.appendChild(tile(q, i, theirsDone["t" + i], false, false)));
+    tm.dataset.n = list.length; tt.dataset.n = theirList.length;
+    const cm = doneCount(g, mt, list), ct = doneCount(g, ot, theirList);
     $("countMine").textContent = `${cm} of ${list.length}`;
-    $("countTheirs").textContent = `${ct} of ${list.length}`;
+    $("countTheirs").textContent = `${ct} of ${theirList.length}`;
     $("namesMine").textContent = team(mt).map((p) => p.name + (p.on === false ? " (away)" : "")).join(", ");
     $("namesTheirs").textContent = team(ot).map((p) => p.name + (p.on === false ? " (away)" : "")).join(", ");
     $("gameView").classList.toggle("team-b", mt === "b");
 
     // Race track: each team's lead ship moves toward the finish
     const lead = (t) => (team(t)[0] && team(t)[0].avatar) || AV.defaults();
-    for (const [id, t, n] of [["shipMine", mt, cm], ["shipTheirs", ot, ct]]) {
+    for (const [id, t, n, len] of [["shipMine", mt, cm, list.length], ["shipTheirs", ot, ct, theirList.length]]) {
       const el = $(id);
       if (!el.firstChild || el.dataset.team !== t) { el.innerHTML = ""; el.appendChild(AV.miniCanvas(lead(t), 34, { flame: 10 })); el.dataset.team = t; }
-      el.style.left = `calc(${(n / list.length) * 100}% - ${(n / list.length) * 34}px)`;
+      el.style.left = `calc(${(n / len) * 100}% - ${(n / len) * 34}px)`;
     }
     const w = g.wins || {};
     $("raceRound").textContent = g.winner ? "Match over" : `Round ${g.round}`;
@@ -452,7 +459,7 @@
 
     // Whoever sees a full board first records the round
     const res = g.result && g.result["r" + g.round];
-    if (!g.winner && !res) for (const t of ["a", "b"]) if (countOf(clearedBy(g, t)) >= list.length) { finishRound(t, g.round); break; }
+    if (!g.winner && !res) for (const t of ["a", "b"]) { const tl = teamBoard(g, t); if (doneCount(g, t, tl) >= tl.length) { finishRound(t, g.round); break; } }
     raceTick();
   }
 
@@ -517,7 +524,7 @@
     const g = room && room.game;
     if (!val || !g || g.winner || L.now() < g.start || Date.now() < frozenUntil) return;
     input.value = "";
-    const list = boardFor(g), mt = myTeam(), done = clearedBy(g, mt), round = g.round;
+    const mt = myTeam(), list = teamBoard(g, mt), done = clearedBy(g, mt), round = g.round;
     const open = (i) => !done["t" + i] && !pending.has(round + ":" + i);
     const idx = list.findIndex((q, i) => open(i) && P.matches(val, q.answer));
     if (idx < 0) {
@@ -855,8 +862,8 @@
   // Demo only: pretend players clear a problem every few seconds
   function botTick(g, now) {
     if (room.host !== user.uid || now < g.start || g.winner) return;
-    const list = boardFor(g);
     for (const p of players().filter((x) => x.bot)) {
+      const list = teamBoard(g, p.team);
       const k = p.uid + ":" + g.round;
       if (!botNext[k]) botNext[k] = now + 2500 + Math.random() * 3500;
       if (now < botNext[k]) continue;
