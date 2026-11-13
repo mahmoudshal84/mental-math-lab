@@ -13,9 +13,8 @@
      host, mode ("race" or "blast"), created, state ("lobby" or "playing")
      Every match uses the same problems: a mix of all eight topics at levels 1 and 2 (MIX below).
      players/{uid}: name, avatar, team ("a" or "b"), on (connected), joined
-     game: round, seed, start (when the round starts), size (players on the bigger team),
-           sizes {a, b} (players on each team when the match started; teams can be uneven, like 1 vs 3,
-           and each team's board has 5 problems per player on that team),
+     game: round, seed, start (when the round starts), size (players on the bigger team; teams can be
+           uneven, like 1 vs 3, and both teams clear the same 5 problems per player on the bigger team),
            wins {a, b}, result {r1: "a", ...}, winner, forfeit
      boards/r{round}/{team}/t{index}: uid of the player who cleared that problem (Race to 5)
      blasts/b{index}: uid of the player who blasted that problem (Blast Battle; game has id, seed, start, n, over,
@@ -105,14 +104,14 @@
     } finally { Math.random = real; }
     return list;
   }
-  // The full shared board (5 per player on the bigger team). Each team gets the start of it:
-  // 5 problems per player on that team, so a team of 1 vs a team of 3 clears 5 vs 15.
+  // The shared board: 5 problems per player on the bigger team. Both teams clear all of it,
+  // so in 1 vs 3 the solo player clears 15, the same as the team of 3.
   function boardFor(g) {
     if (board.seed !== g.seed) { board = { seed: g.seed, list: makeBoard(g.seed, g.size * PER_PLAYER) }; pending.clear(); }
     return board.list;
   }
-  const teamSize = (g, t) => Math.max(1, Math.min(g.size, (g.sizes && g.sizes[t]) || g.size));
-  const teamBoard = (g, t) => boardFor(g).slice(0, teamSize(g, t) * PER_PLAYER);
+  // (A version pushed earlier on Nov 13, 2026 gave smaller teams fewer problems using game.sizes; now unused.)
+  const teamBoard = (g) => boardFor(g);
   const doneCount = (g, t, list) => { const c = clearedBy(g, t); return list.filter((_, i) => c["t" + i]).length; };
   const clearedBy = (g, t) => (room.boards && room.boards["r" + g.round] && room.boards["r" + g.round][t]) || {};
 
@@ -287,7 +286,7 @@
     $("startBtn").hidden = !isHost;
     $("startBtn").disabled = !ready;
     $("startBtn").textContent = ready ? `Start ${A.length} vs ${Bt.length}` : "Start match";
-    const uneven = A.length !== Bt.length ? ` Uneven teams: each team clears 5 problems per player (${A.length * PER_PLAYER} vs ${Bt.length * PER_PLAYER}).` : "";
+    const uneven = A.length !== Bt.length ? ` Uneven teams: both teams clear the same ${Math.max(A.length, Bt.length) * PER_PLAYER} problems.` : "";
     $("startHint").textContent = !A.length || !Bt.length ? "Waiting for players on both teams…"
       : !allHere ? "Waiting for everyone to reconnect…"
       : (isHost ? "Ready when you are!" : "Waiting for the host to start…") + uneven;
@@ -353,8 +352,7 @@
       });
       else await L.update("rooms/" + code, {
         state: "playing", boards: null,
-        game: { id, round: 1, seed: newSeed(), start: L.now() + COUNTDOWN_MS + 600, size: Math.max(team("a").length, team("b").length),
-          sizes: { a: team("a").length, b: team("b").length }, wins: { a: 0, b: 0 } },
+        game: { id, round: 1, seed: newSeed(), start: L.now() + COUNTDOWN_MS + 600, size: Math.max(team("a").length, team("b").length), wins: { a: 0, b: 0 } },
       });
     } catch (e) { toast(e.message); $("startBtn").disabled = false; }
   };
