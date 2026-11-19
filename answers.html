@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Lexend:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=20261119">
-  <link rel="stylesheet" href="css/answers.css?v=20261119">
+  <link rel="stylesheet" href="css/answers.css?v=20261119b">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
 </head>
 <body class="ac-page">
@@ -22,10 +22,15 @@
       <p class="ac-count" id="acCount" aria-live="polite"></p>
     </header>
 
-    <p class="ac-status" id="acStatus" role="status">Loading answers…</p>
     <div class="ac-update" id="acUpdate" role="status" hidden>Your teacher just updated the answers.</div>
 
-    <main class="ac-grid" id="acGrid" aria-label="Answers 1 to 30" hidden></main>
+    <div class="ac-body">
+      <div class="ac-main">
+        <p class="ac-status" id="acStatus" role="status">Loading answers…</p>
+        <main class="ac-grid" id="acGrid" aria-label="Answers 1 to 30" hidden></main>
+      </div>
+      <aside class="ac-calc" id="acCalc" aria-label="Calculator"></aside>
+    </div>
   </div>
 
   <script src="js/config.js"></script>
@@ -34,5 +39,6 @@
   <script src="js/backend.js?v=20261119"></script>
   <script src="js/mathfmt.js?v=20261119"></script>
   <script src="js/answers.js?v=20261119"></script>
+  <script src="js/answer-calc.js?v=20261119b"></script>
 </body>
 </html>
