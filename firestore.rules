@@ -29,6 +29,13 @@ service cloud.firestore {
       return locked.size() == 0 || !(student(request.auth.uid).grade in locked);
     }
 
+    // Answer Check: the answer key on answers.html. Anyone can read it, even without logging in.
+    // Only the admin can change it.
+    match /answers/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Boss drawings (pictures uploaded by the teacher, one per boss). Anyone signed in can see them.
     match /bosses/{id} {
       allow read: if request.auth != null;

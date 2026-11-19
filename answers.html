@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Answer Check · Mental Math Lab</title>
+  <meta name="description" content="Check your Written Practice answers one problem at a time.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Lexend:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=20261119">
+  <link rel="stylesheet" href="css/answers.css?v=20261119">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+</head>
+<body class="ac-page">
+  <div class="wrap ac-wrap">
+    <header class="ac-head">
+      <a class="ac-back" href="index.html">← Mental Math Lab</a>
+      <h1 class="ac-title">Answer Check</h1>
+      <p class="ac-lesson" id="acLesson">Written Practice</p>
+      <p class="ac-how">Work out a problem first. Then tap <b>Reveal answer</b> to see if you got it right.</p>
+      <p class="ac-count" id="acCount" aria-live="polite"></p>
+    </header>
+
+    <p class="ac-status" id="acStatus" role="status">Loading answers…</p>
+    <div class="ac-update" id="acUpdate" role="status" hidden>Your teacher just updated the answers.</div>
+
+    <main class="ac-grid" id="acGrid" aria-label="Answers 1 to 30" hidden></main>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/avatar.js"></script>
+  <script src="js/progress.js?v=20261106"></script>
+  <script src="js/backend.js?v=20261119"></script>
+  <script src="js/mathfmt.js?v=20261119"></script>
+  <script src="js/answers.js?v=20261119"></script>
+</body>
+</html>

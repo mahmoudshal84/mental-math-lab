@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Lexend:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=20261113">
+  <link rel="stylesheet" href="css/answers.css?v=20261119">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔑</text></svg>">
 </head>
 <body>
@@ -83,6 +84,13 @@
       <button class="btn btn-ghost" id="lockMsgSave" type="button">Save message</button>
       <span class="note" id="lockMsgNote" role="status"></span>
       <p class="error" id="accessErr" role="alert"></p>
+    </section>
+
+    <section class="panel ac-admin" id="answersPanel" aria-labelledby="h-answers">
+      <h2 id="h-answers">Answer Check</h2>
+      <p class="note">Students open <b>Answer Check</b> from the login page (no login needed) and reveal one answer at a time.
+        Type the answers below and click <b>Save</b>. Students' screens update within a few seconds, without refreshing.</p>
+      <div id="acAdmin"><p class="note">Loading…</p></div>
     </section>
 
     <section class="admin-grid" style="margin-bottom:36px">
@@ -243,10 +251,12 @@
   <script src="js/problems.js"></script>
   <script src="js/avatar.js"></script>
   <script src="js/progress.js?v=20261106"></script>
-  <script src="js/backend.js?v=20261113"></script>
+  <script src="js/backend.js?v=20261119"></script>
   <script src="js/lock.js"></script>
   <script src="js/boss-art.js"></script>
   <script src="js/boss-maker.js"></script>
   <script src="js/admin.js?v=20261113"></script>
+  <script src="js/mathfmt.js?v=20261119"></script>
+  <script src="js/answers-admin.js?v=20261119"></script>
 </body>
 </html>

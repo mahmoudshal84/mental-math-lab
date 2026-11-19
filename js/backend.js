@@ -69,6 +69,14 @@ window.MML = window.MML || {};
     mapOnly: !!d && d.mapOnly === true,
     lockedGrades: d && Array.isArray(d.lockedGrades) ? [6, 7, 8].filter((g) => d.lockedGrades.map(Number).includes(g)) : [] });
 
+  // Answer Check: a lesson label and exactly 30 answers (text, "" = not posted yet)
+  const ANSWER_COUNT = 30, ANSWER_MAX = 300;
+  const normAnswers = (d) => ({
+    lesson: String((d && d.lesson) || "").slice(0, 60),
+    items: Array.from({ length: ANSWER_COUNT }, (_, k) => String((d && Array.isArray(d.items) && d.items[k]) || "").slice(0, ANSWER_MAX)),
+    changedAt: d ? toMs(d.changedAt) : 0,
+  });
+
   const fb = {
     async init() {
       const base = `https://www.gstatic.com/firebasejs/${FB_VERSION}/`;
@@ -262,6 +270,21 @@ window.MML = window.MML || {};
     async set(patch) {
       const { fsM, db } = F;
       try { await fsM.setDoc(fsM.doc(db, "site", "settings"), Object.assign({}, patch, { changedAt: fsM.serverTimestamp() }), { merge: true }); }
+      catch (e) { throw friendly(e); }
+    },
+  };
+
+  /* ---------- Answer Check (Firestore doc answers/current) ----------
+     The answer key for answers.html. Anyone can read it, even without logging in; only the admin can change it. */
+  fb.answers = {
+    watch(cb) {
+      const { fsM, db } = F;
+      return fsM.onSnapshot(fsM.doc(db, "answers", "current"), (s) => cb(normAnswers(s.exists() ? s.data() : null)),
+        (e) => cb(null, friendly(e)));
+    },
+    async save(a) {
+      const { fsM, db } = F, d = normAnswers(a);
+      try { await fsM.setDoc(fsM.doc(db, "answers", "current"), { lesson: d.lesson, items: d.items, changedAt: fsM.serverTimestamp() }); }
       catch (e) { throw friendly(e); }
     },
   };
@@ -671,6 +694,27 @@ window.MML = window.MML || {};
     },
   };
 
+  /* Demo Answer Check: saved in this browser */
+  const AKEY = "mml-demo-answers";
+  demo.answers = {
+    watch(cb) {
+      let last = "";
+      const tick = () => {
+        let d = null; try { d = JSON.parse(localStorage.getItem(AKEY)); } catch (e) { }
+        const s = JSON.stringify(normAnswers(d));
+        if (s !== last) { last = s; cb(JSON.parse(s)); }
+      };
+      tick();
+      const t = setInterval(tick, 500);
+      return () => clearInterval(t);
+    },
+    async save(a) {
+      await wait(150);
+      const d = normAnswers(a);
+      try { localStorage.setItem(AKEY, JSON.stringify({ lesson: d.lesson, items: d.items, changedAt: Date.now() })); } catch (e) { }
+    },
+  };
+
   /* Demo boss drawings: saved in this browser */
   const CBKEY = "mml-demo-bossart";
   const cbload = () => { try { return JSON.parse(localStorage.getItem(CBKEY)) || {}; } catch (e) { return {}; } };
@@ -871,6 +915,12 @@ window.MML = window.MML || {};
     admin: impl.admin,
     battle: impl.battle,
     settings: impl.settings,
+    // Answer Check: watch(cb) calls cb({ lesson, items, changedAt }) now and after every change; returns a stop function
+    answers: {
+      count: ANSWER_COUNT, max: ANSWER_MAX,
+      async watch(cb) { await MML.backend.init(); return impl.answers.watch(cb); },
+      save: (a) => impl.answers.save(a),
+    },
     bosses: impl.bosses,
     friends: impl.friends,
     maxFriends: MAX_FRIENDS,

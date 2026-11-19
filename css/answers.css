@@ -1,0 +1,157 @@
+/* Mental Math Lab: Answer Check (answers.html, plus its admin panel) */
+
+/* ---------- Math drawn by js/mathfmt.js ---------- */
+.mf-line { display: block; }
+.mf-line + .mf-line { margin-top: 0.25em; }
+.mf-label { margin-right: 0.15em; }
+.mf-frac { display: inline-flex; flex-direction: column; align-items: stretch; text-align: center; vertical-align: middle; font-size: 0.82em; line-height: 1.15; margin: 0 0.12em; }
+.mf-frac.mf-mixed { margin-left: 0.08em; }
+.mf-whole, .mf-root, .mf-sup { white-space: nowrap; }
+.mf-num { border-bottom: 0.09em solid currentColor; padding: 0 0.2em 0.05em; }
+.mf-den { padding: 0.05em 0.2em 0; }
+.mf-frac .mf-frac { font-size: 0.9em; }
+.mf-sup { font-size: 0.62em; line-height: 0; vertical-align: 0.85em; margin-left: 0.04em; }
+.mf-root { white-space: nowrap; display: inline-flex; align-items: flex-end; }
+.mf-rsign { font-size: 1.12em; line-height: 1; }
+.mf-rad { border-top: 0.09em solid currentColor; padding: 0.05em 0.12em 0; margin-left: -0.04em; line-height: 1.1; }
+.mf-idx { font-size: 0.5em; align-self: flex-start; margin-right: -0.5em; margin-top: 0.1em; }
+.mf-rep, .mf-g-seg { text-decoration: overline; text-decoration-thickness: 0.09em; }
+.mf-g-ray, .mf-g-line { position: relative; display: inline-block; padding-top: 0.45em; line-height: 1.1; }
+.mf-g-ray::before, .mf-g-line::before { position: absolute; left: 0; right: 0; top: -0.2em; text-align: center; font-size: 0.75em; line-height: 1; }
+.mf-g-ray::before { content: "\27F6"; }
+.mf-g-line::before { content: "\27F7"; }
+
+/* ---------- Student page ---------- */
+.ac-wrap { max-width: 1120px; padding-top: 22px; }
+.ac-head { text-align: center; margin-bottom: 26px; position: relative; }
+.ac-back {
+  position: absolute; left: 0; top: 0; color: var(--paper); text-decoration: none; font-weight: 600; font-size: 0.92rem;
+  background: rgba(21, 26, 69, 0.55); padding: 6px 14px; border-radius: 999px;
+}
+.ac-back:hover { background: var(--ink); }
+.ac-title {
+  font-family: var(--display); font-weight: 400; margin: 40px 0 10px; line-height: 1;
+  font-size: clamp(2.6rem, 8vw, 4.6rem); color: var(--sun);
+  text-shadow: 0.05em 0.05em 0 var(--ink), 0.1em 0.1em 0 var(--pink);
+}
+.ac-lesson {
+  display: inline-block; margin: 6px 0 0; padding: 8px 20px; border-radius: 999px;
+  background: var(--ink); color: var(--paper); font-weight: 700; font-size: 1.15rem;
+  border: 4px solid transparent;
+  background:
+    linear-gradient(var(--ink), var(--ink)) padding-box,
+    conic-gradient(from var(--ac-turn), #ff4f8b, #ff8a3d, #ffd23f, #2ee6a6, #3fb6ff, #7b6bff, #ff4f8b) border-box;
+  animation: ac-turn 9s linear infinite;
+}
+@property --ac-turn { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@keyframes ac-turn { to { --ac-turn: 360deg; } }
+.ac-how { margin: 16px auto 0; max-width: 46ch; font-size: 1.05rem; opacity: 0.95; }
+.ac-count { margin: 8px 0 0; min-height: 1.5em; color: var(--mint); font-weight: 700; }
+.ac-status { text-align: center; font-size: 1.2rem; font-weight: 600; background: rgba(21, 26, 69, 0.55); border-radius: var(--radius-lg); padding: 28px 20px; max-width: 560px; margin: 10px auto; }
+.ac-retry { font: inherit; font-weight: 700; margin-left: 8px; padding: 4px 14px; border-radius: var(--radius-sm); border: 0; background: var(--sun); color: var(--ink); cursor: pointer; }
+.ac-update {
+  position: sticky; top: 10px; z-index: 5; width: max-content; max-width: 92vw; margin: 0 auto 16px;
+  background: var(--sun); color: var(--ink); font-weight: 700; padding: 10px 20px; border-radius: 999px;
+  box-shadow: 4px 4px 0 var(--ink); animation: ac-drop 0.35s ease-out;
+}
+@keyframes ac-drop { from { transform: translateY(-14px); opacity: 0; } }
+
+.ac-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; margin: 0; }
+@media (max-width: 900px) { .ac-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .ac-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } }
+
+.ac-card {
+  --c: var(--sun);
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 10px; margin: 0;
+  min-height: 158px; padding: 14px 12px 12px; border-radius: var(--radius-lg);
+  background: var(--c); color: var(--ink); border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--ink);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.ac-card:not(.empty):not(.shown):hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--ink); }
+.ac-num { font-family: var(--display); font-size: 2.7rem; line-height: 1; margin-top: 6px; text-shadow: 3px 3px 0 rgba(255, 255, 255, 0.45); }
+.ac-ans { display: none; }
+.ac-btn {
+  width: 100%; font: inherit; font-weight: 700; font-size: 0.98rem; cursor: pointer;
+  padding: 9px 10px; border-radius: var(--radius-sm); border: 0; background: var(--ink); color: var(--paper);
+}
+.ac-btn:hover { background: var(--cobalt-deep); }
+
+/* Revealed: the card turns white with its color as a stripe on top, and the answer in the middle */
+.ac-card.shown { background: #fff; box-shadow: 5px 5px 0 var(--ink), inset 0 10px 0 var(--c); padding-top: 22px; }
+.ac-card.shown .ac-num {
+  position: absolute; top: -12px; left: -10px; margin: 0; font-size: 1.05rem; text-shadow: none;
+  background: var(--c); border: 3px solid var(--ink); border-radius: 999px; min-width: 38px; padding: 5px 8px; text-align: center;
+}
+.ac-card.shown .ac-ans {
+  display: flex; flex-direction: column; justify-content: center; flex: 1; width: 100%;
+  text-align: center; font-weight: 700; font-size: clamp(1.25rem, 2.3vw, 1.6rem); line-height: 1.35; overflow-wrap: anywhere;
+}
+.ac-card.shown .ac-btn { background: transparent; color: var(--ink); border: 2px solid #c9cef0; padding: 5px 10px; font-size: 0.88rem; width: auto; }
+.ac-card.shown .ac-btn:hover { border-color: var(--ink); }
+.ac-card.pop { animation: ac-pop 0.32s cubic-bezier(.2, 1.4, .4, 1); }
+@keyframes ac-pop { from { transform: scale(0.9) rotate(-2deg); } to { transform: none; } }
+
+/* Not posted yet */
+.ac-card.empty { background: rgba(246, 247, 255, 0.1); color: var(--paper); border: 3px dashed rgba(246, 247, 255, 0.45); box-shadow: none; }
+.ac-card.empty .ac-num { opacity: 0.6; text-shadow: none; }
+.ac-card.empty .ac-btn { background: transparent; color: var(--paper); opacity: 0.7; cursor: default; font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ac-lesson, .ac-card.pop, .ac-update { animation: none; }
+  .ac-card { transition: none; }
+}
+@media (max-width: 600px) { .ac-title { margin-top: 48px; } }
+
+/* ---------- Login page button ---------- */
+.ac-login-link {
+  display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 22px; text-decoration: none;
+  font-weight: 700; font-size: 1.1rem; color: var(--ink); padding: 14px 20px; border-radius: var(--radius-lg);
+  border: 4px solid transparent; box-shadow: 6px 6px 0 var(--ink);
+  background:
+    linear-gradient(var(--sun), var(--sun)) padding-box,
+    conic-gradient(from var(--ac-turn), #ff4f8b, #ff8a3d, #ffd23f, #2ee6a6, #3fb6ff, #7b6bff, #ff4f8b) border-box;
+  animation: ac-turn 9s linear infinite;
+}
+.ac-login-link:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--ink); }
+.ac-login-link small { display: block; font-weight: 600; font-size: 0.82rem; opacity: 0.8; }
+@media (prefers-reduced-motion: reduce) { .ac-login-link { animation: none; } }
+
+/* ---------- Admin panel ---------- */
+.ac-admin .ac-top { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: flex-end; }
+.ac-admin .ac-top .field { margin: 8px 0; }
+.ac-tools {
+  position: sticky; top: 0; z-index: 4; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center;
+  background: #eef0ff; border: 2px solid #c9cef0; border-radius: var(--radius-sm); padding: 8px 10px; margin: 12px 0;
+}
+.ac-tools .ac-tg { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.ac-tools .ac-tg > span { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.6; margin-right: 2px; }
+.ac-tools button {
+  font: inherit; font-size: 0.95rem; min-width: 34px; padding: 3px 8px; border-radius: 6px; cursor: pointer;
+  border: 2px solid #c9cef0; background: #fff; color: var(--ink);
+}
+.ac-tools button:hover { border-color: var(--cobalt); }
+.ac-tools .ac-target { font-size: 0.85rem; font-weight: 600; margin-left: auto; color: var(--cobalt); }
+.ac-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 14px; }
+@media (max-width: 1000px) { .ac-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .ac-fields { grid-template-columns: 1fr; } }
+.ac-field { display: grid; grid-template-columns: 34px 1fr; gap: 4px 8px; align-items: start; }
+.ac-field > b {
+  grid-row: span 2; font-family: var(--display); font-weight: 400; font-size: 1rem; text-align: center;
+  background: var(--ink); color: var(--sun); border-radius: 6px; padding: 6px 0;
+}
+.ac-field textarea {
+  font: inherit; font-size: 1rem; width: 100%; resize: vertical; min-height: 40px; height: 40px; padding: 7px 10px;
+  border-radius: var(--radius-sm); border: 2px solid #c9cef0; background: #fff; color: var(--ink); line-height: 1.35;
+}
+.ac-field textarea:focus { border-color: var(--cobalt); outline: none; }
+.ac-field.changed textarea { border-color: var(--sun); background: #fffbea; }
+.ac-prev { min-height: 1.4em; font-size: 1.05rem; padding: 2px 4px; color: var(--ink); overflow-wrap: anywhere; }
+.ac-prev:empty::before { content: "Empty: students see \"Not posted yet\""; font-size: 0.8rem; opacity: 0.45; }
+.ac-paste textarea { width: 100%; min-height: 140px; font: inherit; padding: 8px 10px; border-radius: var(--radius-sm); border: 2px solid #c9cef0; }
+.ac-admin details { margin: 12px 0; }
+.ac-admin details summary { cursor: pointer; font-weight: 700; }
+.ac-admin .ac-cheat { font-size: 0.88rem; border-collapse: collapse; margin-top: 8px; }
+.ac-admin .ac-cheat td, .ac-admin .ac-cheat th { border: 1px solid #dde0f5; padding: 3px 10px; text-align: left; }
+.ac-admin .ac-cheat code { background: #eef0ff; padding: 1px 5px; border-radius: 4px; }
+.ac-save-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 16px; position: sticky; bottom: 0; background: var(--paper); padding: 10px 0; z-index: 4; }
+.ac-save-row .note { margin: 0; }
